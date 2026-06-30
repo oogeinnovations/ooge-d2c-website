@@ -1,113 +1,101 @@
-import {useLoaderData, data, type HeadersFunction} from 'react-router';
-import type {Route} from './+types/cart';
-import type {CartQueryDataReturn} from '@shopify/hydrogen';
-import {CartForm} from '@shopify/hydrogen';
-import {CartMain} from '~/components/CartMain';
+import {useEffect, useState} from 'react';
+import {Link, type MetaFunction} from 'react-router';
+import {useCartStore} from '~/stores/cart';
+import {formatPrice} from '~/lib/format';
 
-export const meta: Route.MetaFunction = () => {
-  return [{title: `Hydrogen | Cart`}];
-};
+// Client-rendered demo cart page (visual clone of the Next.js app). Reads from
+// the client-side zustand cart, not Shopify's server cart.
+const SHIPPING = 4900; // ₹49 flat; free over ₹999
+const FREE_SHIPPING_THRESHOLD = 99900;
 
-export const headers: HeadersFunction = ({actionHeaders}) => actionHeaders;
+export const meta: MetaFunction = () => [{title: 'Your cart | Ooge'}];
 
-export async function action({request, context}: Route.ActionArgs) {
-  const {cart} = context;
+export default function CartPage() {
+  const items = useCartStore((s) => s.items);
+  const setQty = useCartStore((s) => s.setQty);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const subtotal = useCartStore((s) => s.subtotal());
 
-  const formData = await request.formData();
+  // Cart lives in localStorage → render after mount to avoid hydration mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <main className="container">Loading cart…</main>;
 
-  const {action, inputs} = CartForm.getFormInput(formData);
-
-  if (!action) {
-    throw new Error('No action provided');
+  if (items.length === 0) {
+    return (
+      <main className="container empty-state">
+        <h1>Your cart is empty</h1>
+        <Link to="/collections/all" className="btn btn--primary">
+          Start shopping
+        </Link>
+      </main>
+    );
   }
 
-  let status = 200;
-  let result: CartQueryDataReturn;
-
-  switch (action) {
-    case CartForm.ACTIONS.LinesAdd:
-      result = await cart.addLines(inputs.lines);
-      break;
-    case CartForm.ACTIONS.LinesUpdate:
-      result = await cart.updateLines(inputs.lines);
-      break;
-    case CartForm.ACTIONS.LinesRemove:
-      result = await cart.removeLines(inputs.lineIds);
-      break;
-    case CartForm.ACTIONS.DiscountCodesUpdate: {
-      const formDiscountCode = inputs.discountCode;
-
-      // User inputted discount code
-      const discountCodes = (
-        formDiscountCode ? [formDiscountCode] : []
-      ) as string[];
-
-      // Combine discount codes already applied on cart
-      discountCodes.push(...inputs.discountCodes);
-
-      result = await cart.updateDiscountCodes(discountCodes);
-      break;
-    }
-    case CartForm.ACTIONS.GiftCardCodesAdd: {
-      const formGiftCardCode = inputs.giftCardCode;
-
-      const giftCardCodes = (
-        formGiftCardCode ? [formGiftCardCode] : []
-      ) as string[];
-
-      result = await cart.addGiftCardCodes(giftCardCodes);
-      break;
-    }
-    case CartForm.ACTIONS.GiftCardCodesRemove: {
-      const appliedGiftCardIds = inputs.giftCardCodes as string[];
-      result = await cart.removeGiftCardCodes(appliedGiftCardIds);
-      break;
-    }
-    case CartForm.ACTIONS.BuyerIdentityUpdate: {
-      result = await cart.updateBuyerIdentity({
-        ...inputs.buyerIdentity,
-      });
-      break;
-    }
-    default:
-      throw new Error(`${action} cart action is not defined`);
-  }
-
-  const cartId = result?.cart?.id;
-  const headers = cartId ? cart.setCartId(result.cart.id) : new Headers();
-  const {cart: cartResult, errors, warnings} = result;
-
-  const redirectTo = formData.get('redirectTo') ?? null;
-  if (typeof redirectTo === 'string') {
-    status = 303;
-    headers.set('Location', redirectTo);
-  }
-
-  return data(
-    {
-      cart: cartResult,
-      errors,
-      warnings,
-      analytics: {
-        cartId,
-      },
-    },
-    {status, headers},
-  );
-}
-
-export async function loader({context}: Route.LoaderArgs) {
-  const {cart} = context;
-  return await cart.get();
-}
-
-export default function Cart() {
-  const cart = useLoaderData<typeof loader>();
+  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING;
 
   return (
-    <div className="cart">
-      <h1>Cart</h1>
-      <CartMain layout="page" cart={cart} />
-    </div>
+    <main className="container cart">
+      <h1 className="section-title">Your cart</h1>
+
+      <ul className="cart__list">
+        {items.map((item) => (
+          <li key={item.productId} className="cart-line">
+            {item.image ? (
+              <img className="cart-line__img" src={item.image} alt={item.name} />
+            ) : (
+              <span className="cart-line__img cart-line__img--empty" aria-hidden />
+            )}
+            <div className="cart-line__info">
+              <Link to={`/products/${item.slug}`}>{item.name}</Link>
+              <span className="cart-line__price">{formatPrice(item.price)}</span>
+            </div>
+            <div className="qty">
+              <button
+                onClick={() => setQty(item.productId, item.qty - 1)}
+                aria-label="Decrease"
+              >
+                −
+              </button>
+              <span>{item.qty}</span>
+              <button
+                onClick={() => setQty(item.productId, item.qty + 1)}
+                aria-label="Increase"
+              >
+                +
+              </button>
+            </div>
+            <span className="cart-line__total">
+              {formatPrice(item.price * item.qty)}
+            </span>
+            <button
+              className="cart-line__remove"
+              onClick={() => removeItem(item.productId)}
+              aria-label="Remove"
+            >
+              ✕
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <div className="summary">
+        <div className="summary__row">
+          <span>Subtotal</span>
+          <span>{formatPrice(subtotal)}</span>
+        </div>
+        <div className="summary__row">
+          <span>Shipping</span>
+          <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
+        </div>
+        <div className="summary__row summary__row--total">
+          <span>Total</span>
+          <span>{formatPrice(subtotal + shipping)}</span>
+        </div>
+        <Link to="/checkout" className="btn btn--primary btn--block">
+          Proceed to checkout
+        </Link>
+      </div>
+    </main>
   );
 }

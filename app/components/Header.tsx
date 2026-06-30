@@ -1,231 +1,130 @@
-import {Suspense} from 'react';
-import {Await, NavLink, useAsyncValue} from 'react-router';
-import {
-  type CartViewPayload,
-  useAnalytics,
-  useOptimisticCart,
-} from '@shopify/hydrogen';
-import type {HeaderQuery, CartApiQueryFragment} from 'storefrontapi.generated';
-import {useAside} from '~/components/Aside';
+import {Suspense, useEffect, useState} from 'react';
+import {Await, Link} from 'react-router';
+import {MegaMenu, type MegaCollection} from '~/components/MegaMenu';
+import {SearchBar} from '~/components/SearchBar';
+import {useCartStore} from '~/stores/cart';
+import {useUiStore} from '~/stores/ui';
 
-interface HeaderProps {
-  header: HeaderQuery;
-  cart: Promise<CartApiQueryFragment | null>;
-  isLoggedIn: Promise<boolean>;
-  publicStoreDomain: string;
-}
+// Set to true once the storefront is hosted (HTTPS) and the production
+// Customer Account API callback URL is registered — then the account icon shows.
+const SHOW_ACCOUNT = false;
 
-type Viewport = 'desktop' | 'mobile';
-
+// Boult-style header: logo + tagline, centered nav, big search pill, account + bag.
+// Hovering "Categories" opens a full-width dropdown of category tiles.
 export function Header({
-  header,
+  collections,
   isLoggedIn,
-  cart,
-  publicStoreDomain,
-}: HeaderProps) {
-  const {shop, menu} = header;
+}: {
+  collections: MegaCollection[];
+  isLoggedIn?: Promise<boolean>;
+}) {
   return (
-    <header className="header">
-      <NavLink prefetch="intent" to="/" style={activeLinkStyle} end>
-        <strong>{shop.name}</strong>
-      </NavLink>
-      <HeaderMenu
-        menu={menu}
-        viewport="desktop"
-        primaryDomainUrl={header.shop.primaryDomain.url}
-        publicStoreDomain={publicStoreDomain}
-      />
-      <HeaderCtas isLoggedIn={isLoggedIn} cart={cart} />
+    <header className="site-header">
+      <div className="container site-header__bar">
+        <Link to="/" className="site-header__logo" aria-label="Ooge home">
+          <img
+            src="/ooge-logo.png"
+            alt="Ooge"
+            width={34}
+            height={34}
+            className="logo"
+          />
+          <span className="brand-tag">
+            <span className="brand-tag__hl">Premium</span>
+            <span className="brand-tag__txt">
+              Audio Brand
+              <br />
+              in India
+            </span>
+          </span>
+        </Link>
+
+        <nav className="site-nav" aria-label="Main">
+          <MegaMenu collections={collections} />
+          <Link to="/pages/support">Support &amp; Warranty</Link>
+          <Link to="/collections/all">Bestsellers</Link>
+          <Link to="/pages/corporate-gifting">Corporate Gifting</Link>
+          <Link to="/pages/about">More</Link>
+        </nav>
+
+        <div className="site-header__actions">
+          <SearchBar />
+          {/* Account icon — hidden until hosted: Customer Account OAuth needs
+              HTTPS, so login 400s on localhost. Flip SHOW_ACCOUNT to true after
+              deploying (and registering the prod /account/authorize callback). */}
+          {SHOW_ACCOUNT && (
+            <Suspense fallback={<AccountLink label="Account" />}>
+              <Await
+                resolve={isLoggedIn}
+                errorElement={<AccountLink label="Sign in" />}
+              >
+                {(loggedIn) => (
+                  <AccountLink label={loggedIn ? 'Account' : 'Sign in'} />
+                )}
+              </Await>
+            </Suspense>
+          )}
+          <CartBadge />
+        </div>
+      </div>
     </header>
   );
 }
 
-export function HeaderMenu({
-  menu,
-  primaryDomainUrl,
-  viewport,
-  publicStoreDomain,
-}: {
-  menu: HeaderProps['header']['menu'];
-  primaryDomainUrl: HeaderProps['header']['shop']['primaryDomain']['url'];
-  viewport: Viewport;
-  publicStoreDomain: HeaderProps['publicStoreDomain'];
-}) {
-  const className = `header-menu-${viewport}`;
-  const {close} = useAside();
-
+// Account icon → Shopify customer account (redirects to login when signed out).
+function AccountLink({label}: {label: string}) {
   return (
-    <nav className={className} role="navigation">
-      {viewport === 'mobile' && (
-        <NavLink
-          end
-          onClick={close}
-          prefetch="intent"
-          style={activeLinkStyle}
-          to="/"
-        >
-          Home
-        </NavLink>
-      )}
-      {(menu || FALLBACK_HEADER_MENU).items.map((item) => {
-        if (!item.url) return null;
-
-        // if the url is internal, we strip the domain
-        const url =
-          item.url.includes('myshopify.com') ||
-          item.url.includes(publicStoreDomain) ||
-          item.url.includes(primaryDomainUrl)
-            ? new URL(item.url).pathname
-            : item.url;
-        return (
-          <NavLink
-            className="header-menu-item"
-            end
-            key={item.id}
-            onClick={close}
-            prefetch="intent"
-            style={activeLinkStyle}
-            to={url}
-          >
-            {item.title}
-          </NavLink>
-        );
-      })}
-    </nav>
+    <Link to="/account" className="icon-btn" aria-label={label} title={label}>
+      <svg
+        width="23"
+        height="23"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+      </svg>
+    </Link>
   );
 }
 
-function HeaderCtas({
-  isLoggedIn,
-  cart,
-}: Pick<HeaderProps, 'isLoggedIn' | 'cart'>) {
-  return (
-    <nav className="header-ctas" role="navigation">
-      <HeaderMenuMobileToggle />
-      <NavLink prefetch="intent" to="/account" style={activeLinkStyle}>
-        <Suspense fallback="Sign in">
-          <Await resolve={isLoggedIn} errorElement="Sign in">
-            {(isLoggedIn) => (isLoggedIn ? 'Account' : 'Sign in')}
-          </Await>
-        </Suspense>
-      </NavLink>
-      <SearchToggle />
-      <CartToggle cart={cart} />
-    </nav>
-  );
-}
+// Cart icon — opens the slide-out drawer and shows a live count.
+function CartBadge() {
+  const count = useCartStore((s) => s.totalItems());
+  const openCart = useUiStore((s) => s.openCart);
 
-function HeaderMenuMobileToggle() {
-  const {open} = useAside();
+  // Avoid hydration mismatch: localStorage isn't available on the server, so
+  // render the count only after mount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   return (
     <button
-      className="header-menu-mobile-toggle reset"
-      onClick={() => open('mobile')}
+      type="button"
+      className="cart-badge"
+      aria-label="Open cart"
+      onClick={openCart}
     >
-      <h3>☰</h3>
+      <svg
+        width="23"
+        height="23"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M5 7h14l-1.2 13.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8L5 7z" />
+        <path d="M9 7a3 3 0 0 1 6 0" />
+      </svg>
+      {mounted && count > 0 && <span className="cart-badge__count">{count}</span>}
     </button>
   );
-}
-
-function SearchToggle() {
-  const {open} = useAside();
-  return (
-    <button className="reset" onClick={() => open('search')}>
-      Search
-    </button>
-  );
-}
-
-function CartBadge({count}: {count: number}) {
-  const {open} = useAside();
-  const {publish, shop, cart, prevCart} = useAnalytics();
-
-  return (
-    <a
-      href="/cart"
-      onClick={(e) => {
-        e.preventDefault();
-        open('cart');
-        publish('cart_viewed', {
-          cart,
-          prevCart,
-          shop,
-          url: window.location.href || '',
-        } as CartViewPayload);
-      }}
-    >
-      Cart <span aria-label={`(items: ${count})`}>{count}</span>
-    </a>
-  );
-}
-
-function CartToggle({cart}: Pick<HeaderProps, 'cart'>) {
-  return (
-    <Suspense fallback={<CartBadge count={0} />}>
-      <Await resolve={cart}>
-        <CartBanner />
-      </Await>
-    </Suspense>
-  );
-}
-
-function CartBanner() {
-  const originalCart = useAsyncValue() as CartApiQueryFragment | null;
-  const cart = useOptimisticCart(originalCart);
-  return <CartBadge count={cart?.totalQuantity ?? 0} />;
-}
-
-const FALLBACK_HEADER_MENU = {
-  id: 'gid://shopify/Menu/199655587896',
-  items: [
-    {
-      id: 'gid://shopify/MenuItem/461609500728',
-      resourceId: null,
-      tags: [],
-      title: 'Collections',
-      type: 'HTTP',
-      url: '/collections',
-      items: [],
-    },
-    {
-      id: 'gid://shopify/MenuItem/461609533496',
-      resourceId: null,
-      tags: [],
-      title: 'Blog',
-      type: 'HTTP',
-      url: '/blogs/journal',
-      items: [],
-    },
-    {
-      id: 'gid://shopify/MenuItem/461609566264',
-      resourceId: null,
-      tags: [],
-      title: 'Policies',
-      type: 'HTTP',
-      url: '/policies',
-      items: [],
-    },
-    {
-      id: 'gid://shopify/MenuItem/461609599032',
-      resourceId: 'gid://shopify/Page/92591030328',
-      tags: [],
-      title: 'About',
-      type: 'PAGE',
-      url: '/pages/about',
-      items: [],
-    },
-  ],
-};
-
-function activeLinkStyle({
-  isActive,
-  isPending,
-}: {
-  isActive: boolean;
-  isPending: boolean;
-}) {
-  return {
-    fontWeight: isActive ? 'bold' : undefined,
-    color: isPending ? 'grey' : 'black',
-  };
 }

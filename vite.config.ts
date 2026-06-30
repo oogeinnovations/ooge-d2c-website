@@ -30,6 +30,8 @@ export default defineConfig({
         'react-router > set-cookie-parser',
         'react-router > cookie',
         'react-router',
+        'zustand',
+        'zustand/middleware',
       ],
     },
   },

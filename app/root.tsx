@@ -14,7 +14,7 @@ import type {Route} from './+types/root';
 import favicon from '~/assets/favicon.svg';
 import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
 import resetStyles from '~/styles/reset.css?url';
-import appStyles from '~/styles/app.css?url';
+import oogeStyles from '~/styles/ooge.css?url';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from './components/PageLayout';
 
@@ -101,18 +101,42 @@ export async function loader(args: Route.LoaderArgs) {
 async function loadCriticalData({context}: Route.LoaderArgs) {
   const {storefront} = context;
 
-  const [header] = await Promise.all([
+  const [header, headerCollections] = await Promise.all([
     storefront.query(HEADER_QUERY, {
       cache: storefront.CacheLong(),
       variables: {
         headerMenuHandle: 'main-menu', // Adjust to your header menu handle
       },
     }),
+    // Category tiles for the header mega-menu (Ooge).
+    storefront.query(HEADER_COLLECTIONS_QUERY, {
+      cache: storefront.CacheLong(),
+    }),
     // Add other queries here, so that they are loaded in parallel
   ]);
 
-  return {header};
+  return {
+    header,
+    collections: headerCollections?.collections?.nodes ?? [],
+  };
 }
+
+const HEADER_COLLECTIONS_QUERY = `#graphql
+  query HeaderCollections($country: CountryCode, $language: LanguageCode)
+  @inContext(country: $country, language: $language) {
+    collections(first: 12, sortKey: TITLE) {
+      nodes {
+        id
+        title
+        handle
+        image {
+          url
+          altText
+        }
+      }
+    }
+  }
+` as const;
 
 /**
  * Load data for rendering content below the fold. This data is deferred and will be
@@ -152,7 +176,7 @@ export function Layout({children}: {children?: React.ReactNode}) {
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <link rel="stylesheet" href={tailwindCss}></link>
         <link rel="stylesheet" href={resetStyles}></link>
-        <link rel="stylesheet" href={appStyles}></link>
+        <link rel="stylesheet" href={oogeStyles}></link>
         <Meta />
         <Links />
       </head>
