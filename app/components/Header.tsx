@@ -21,6 +21,7 @@ export function Header({
   return (
     <header className="site-header">
       <div className="container site-header__bar">
+        <MenuToggle />
         <Link to="/" className="site-header__logo" aria-label="Ooge home">
           <img
             src="/ooge-logo.png"
@@ -68,6 +69,33 @@ export function Header({
         </div>
       </div>
     </header>
+  );
+}
+
+// Hamburger — opens the slide-out mobile menu. Hidden on desktop via CSS
+// (the full .site-nav shows instead above 1080px).
+function MenuToggle() {
+  const openMenu = useUiStore((s) => s.openMenu);
+  return (
+    <button
+      type="button"
+      className="menu-toggle"
+      aria-label="Open menu"
+      onClick={openMenu}
+    >
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        aria-hidden
+      >
+        <path d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
   );
 }
 

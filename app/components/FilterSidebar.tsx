@@ -1,8 +1,9 @@
 // Shop filters (Nasher Miles style): borderless collapsible sections with a
 // dual-thumb price slider + inputs, Category, and Colour swatches. All state is
 // mirrored to the URL query so results filter and stay shareable.
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useSearchParams} from 'react-router';
+import {useUiStore} from '~/stores/ui';
 
 type Category = {slug: string; name: string};
 
@@ -18,6 +19,19 @@ export function FilterSidebar({
   hideCategory?: boolean;
 }) {
   const [params, setSearchParams] = useSearchParams();
+
+  // On mobile the sidebar is a slide-out drawer controlled by the UI store.
+  const open = useUiStore((s) => s.filtersOpen);
+  const close = useUiStore((s) => s.closeFilters);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
+    if (open) document.addEventListener('keydown', onKey);
+    document.body.style.overflow = open ? 'hidden' : '';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [open, close]);
 
   const [closed, setClosed] = useState<Set<string>>(new Set());
   const toggleSection = (k: string) =>
@@ -102,18 +116,34 @@ export function FilterSidebar({
   );
 
   return (
-    <aside className="filters">
-      <div className="filters__header">
-        <h3 className="filters__title">Filters</h3>
-        <button
-          type="button"
-          className="filters__clear"
-          onClick={clearAll}
-          disabled={!hasFilters}
-        >
-          Clear all
-        </button>
-      </div>
+    <>
+      <div
+        className={`filters-overlay ${open ? 'is-open' : ''}`}
+        onClick={close}
+        aria-hidden={!open}
+      />
+      <aside className={`filters ${open ? 'is-open' : ''}`}>
+        <div className="filters__header">
+          <h3 className="filters__title">Filters</h3>
+          <div className="filters__header-actions">
+            <button
+              type="button"
+              className="filters__clear"
+              onClick={clearAll}
+              disabled={!hasFilters}
+            >
+              Clear all
+            </button>
+            <button
+              type="button"
+              className="filters__close"
+              onClick={close}
+              aria-label="Close filters"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
 
       <div className="fgroup">
         <button className="fgroup__head" onClick={() => toggleSection('price')}>
@@ -232,18 +262,30 @@ export function FilterSidebar({
         </div>
       )}
 
-      <div className="fgroup">
-        <label className="filter-check filter-check--lg">
-          <input
-            type="checkbox"
-            checked={params.get('instock') === '1'}
-            onChange={() =>
-              setParam('instock', params.get('instock') === '1' ? '' : '1')
-            }
-          />
-          In stock only
-        </label>
-      </div>
-    </aside>
+        <div className="fgroup">
+          <label className="filter-check filter-check--lg">
+            <input
+              type="checkbox"
+              checked={params.get('instock') === '1'}
+              onChange={() =>
+                setParam('instock', params.get('instock') === '1' ? '' : '1')
+              }
+            />
+            In stock only
+          </label>
+        </div>
+
+        {/* Mobile-only: dismiss the drawer (results already updated live). */}
+        <div className="filters__done-wrap">
+          <button
+            type="button"
+            className="btn btn--dark btn--block filters__done"
+            onClick={close}
+          >
+            Show results
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }
