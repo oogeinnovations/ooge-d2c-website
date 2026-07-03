@@ -2,7 +2,7 @@
 import {useState} from 'react';
 import {useNavigate} from 'react-router';
 
-export function SearchBar() {
+export function SearchBar({onSubmitted}: {onSubmitted?: () => void} = {}) {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
 
@@ -15,6 +15,7 @@ export function SearchBar() {
         navigate(
           q.trim() ? `/search?q=${encodeURIComponent(q.trim())}` : '/search',
         );
+        onSubmitted?.();
       }}
     >
       <svg

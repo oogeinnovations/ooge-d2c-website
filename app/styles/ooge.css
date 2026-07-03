@@ -813,6 +813,11 @@ a.contact-card:hover { border-color: var(--brand); }
 .search__icon { width: 17px; height: 17px; }
 .search__input { font-size: 0.9rem; }
 .search__input::placeholder { color: var(--gray); }
+/* The pill already shows focus via .search:focus-within. Suppress the input's
+   own ring (inherited from the global :focus-visible rule) so we don't get a
+   double ring — one around the pill and one around the input. */
+.search__input:focus,
+.search__input:focus-visible { outline: none; box-shadow: none; }
 .icon-btn, .cart-badge { transition: transform 0.18s var(--ease), color 0.18s var(--ease); }
 .icon-btn:hover, .cart-badge:hover { transform: translateY(-1px); }
 
@@ -1442,4 +1447,352 @@ a.contact-card:hover { border-color: var(--brand); }
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ==========================================================================
+   MOBILE NAVIGATION — hamburger + left slide-out drawer.
+   The desktop .site-nav is hidden below 1080px (see the Responsive block above);
+   this drawer replaces it with search + nav links + the category list.
+   ========================================================================== */
+
+/* hamburger button — hidden on desktop, shown once the inline nav collapses */
+.menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  margin-left: -8px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.18s var(--ease), color 0.18s var(--ease);
+}
+.menu-toggle:hover { background: var(--surface-2); color: var(--accent-text); }
+
+/* dim backdrop behind the drawer */
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 12, 0.45);
+  z-index: 60;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s, visibility 0.25s;
+}
+.menu-overlay.is-open { opacity: 1; visibility: visible; }
+
+/* the sliding panel (from the left) */
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100dvh;
+  width: min(360px, 86vw);
+  background: #fff;
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 12px 0 40px rgba(0, 0, 0, 0.16);
+}
+.mobile-menu.is-open { transform: none; }
+.mobile-menu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.mobile-menu__title { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
+.mobile-menu__close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--muted);
+}
+.mobile-menu__close:hover { color: var(--text); }
+.mobile-menu__body { flex: 1; overflow-y: auto; padding: 18px 20px 28px; }
+
+/* the header search pill is hidden on small screens, but inside the drawer it
+   must always show — full width */
+.mobile-menu__search { margin-bottom: 20px; }
+.mobile-menu .search { display: flex; width: 100%; }
+
+.mobile-nav { display: flex; flex-direction: column; }
+.mobile-nav a {
+  padding: 14px 2px;
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 1px solid var(--line);
+}
+.mobile-nav a:hover { color: var(--accent-text); }
+
+.mobile-menu__cats { margin-top: 22px; }
+.mobile-menu__cats-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.mobile-menu__cats-head span {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--accent-text);
+}
+.mobile-menu__cats-head a { font-size: 0.85rem; font-weight: 600; color: var(--accent-text); }
+.mobile-cats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.mobile-cat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: center;
+  transition: border-color 0.2s var(--ease), transform 0.15s var(--ease);
+}
+.mobile-cat:hover { border-color: var(--brand); transform: translateY(-2px); }
+.mobile-cat__media {
+  width: 100%;
+  height: 60px;
+  border-radius: 10px;
+  background: radial-gradient(80% 80% at 50% 28%, #fbfcfd 0%, #eceef3 100%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.mobile-cat__img { width: 46px; height: 46px; object-fit: contain; mix-blend-mode: multiply; }
+.mobile-cat__emoji { font-size: 1.5rem; }
+.mobile-cat__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.74rem;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* show the hamburger + right-align the header actions exactly when the inline
+   nav collapses (matches the 1080px nav-hide breakpoint) */
+@media (max-width: 1080px) {
+  .menu-toggle { display: inline-flex; }
+  .site-header__actions { margin-left: auto; }
+}
+
+/* ==========================================================================
+   MOBILE PADDING — full-width bands carry 40–44px side padding that is far too
+   wide on a phone. Pull it in so content isn't squeezed into the middle.
+   ========================================================================== */
+@media (max-width: 600px) {
+  .support-warranty__grid,
+  .corp-cta__grid { padding: 32px 20px; }
+  .corp-hero__inner { padding: 48px 20px 52px; }
+  .about-cta__inner { padding: 32px 20px; }
+  .site-footer__top { padding: 40px 20px 28px; }
+  .site-footer__bottombar { padding: 18px 20px; }
+  .newsletter__inner { padding: 32px 22px; }
+  .newsletter__inner::before { width: 240px; height: 240px; }
+  .page-hero .container { padding-top: 40px; padding-bottom: 40px; }
+}
+
+/* ==========================================================================
+   GRID SHRINK FIX — `repeat(N, 1fr)` tracks default to `min-width: auto`, so
+   cells refuse to shrink below their content and overflow the viewport on
+   narrow screens. `minmax(0, 1fr)` lets them shrink; min-width:0 + wrapping
+   lets the inner text reflow instead of pushing the column wide.
+   ========================================================================== */
+.feature { min-width: 0; }
+.feature > div { min-width: 0; display: flex; flex-direction: column; }
+.feature strong, .feature__sub { overflow-wrap: anywhere; }
+@media (max-width: 900px) {
+  .features__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lifestyle,
+  .reels,
+  .site-footer__top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .help-grid,
+  .contact-cards,
+  .values-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pdp-highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* very small phones: feature strip reads better as a single column */
+@media (max-width: 430px) {
+  .features__grid { grid-template-columns: 1fr; gap: 14px; }
+}
+
+/* ==========================================================================
+   MOBILE FILTERS — below 820px the inline sidebar becomes a left slide-out
+   drawer opened by the "Filters" button in the sort bar, so the product grid
+   isn't buried under the whole filter panel. Desktop is unchanged.
+   ========================================================================== */
+
+/* the sort-bar trigger + the drawer-only chrome are hidden on desktop */
+.filters-toggle {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease);
+}
+.filters-toggle:hover { border-color: var(--ink); }
+.filters-toggle__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.filters__header-actions { display: flex; align-items: center; gap: 12px; }
+.filters-overlay { display: none; }
+.filters__close { display: none; }
+.filters__done-wrap { display: none; }
+
+@media (max-width: 820px) {
+  .filters-toggle { display: inline-flex; }
+
+  .filters-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 12, 0.45);
+    z-index: 60;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s, visibility 0.25s;
+  }
+  .filters-overlay.is-open { opacity: 1; visibility: visible; }
+
+  /* the sidebar itself → left drawer */
+  .filters {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 61;
+    width: min(360px, 88vw);
+    height: 100dvh;
+    margin: 0;
+    padding: 0 20px;
+    border: none;
+    border-radius: 0;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.16);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .filters.is-open { transform: none; }
+
+  .filters__header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+    padding: 16px 0 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .filters__close {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .filters__close:hover { color: var(--text); }
+
+  /* sticky "Show results" footer, pinned to the bottom of the drawer */
+  .filters__done-wrap {
+    display: block;
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+    padding: 14px 0;
+    background: #fff;
+    border-top: 1px solid var(--line);
+  }
+}
+
+/* ==========================================================================
+   CHECKOUT (mobile) — the two-column form/summary grid must stack on phones.
+   The base collapse rule (≤760px, further up) is overridden by the later
+   ".checkout__grid { 1.55fr 1fr }" desktop tweak, so re-assert it here — this
+   is the last rule in the file, so it wins the cascade. Without it the form is
+   crushed to ~200px and the page scrolls sideways.
+   ========================================================================== */
+@media (max-width: 760px) {
+  .checkout__grid { grid-template-columns: 1fr; gap: 22px; }
+  .checkout .summary { position: static; }
+}
+/* stack City / PIN on very small phones so neither input gets too narrow */
+@media (max-width: 400px) {
+  .checkout__row { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================================
+   PDP VARIANTS (display-only) — the colour variants are shown as an
+   informational list ("Variants available for this product"), not a purchase
+   selector, so the swatches are static (no pointer, hover lift, or active ring)
+   and each carries its colour name below the thumbnail.
+   ========================================================================== */
+.pdp-variant-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  width: 60px;
+}
+.pdp-color--display { cursor: default; }
+.pdp-color--display:hover {
+  transform: none;
+  border-color: var(--line);
+}
+.pdp-color__name {
+  font-size: 0.72rem;
+  line-height: 1.2;
+  color: var(--muted);
+  text-align: center;
+  max-width: 68px;
+  overflow-wrap: anywhere;
 }

@@ -1,6 +1,7 @@
 import * as serverBuild from 'virtual:react-router/server-build';
 import {createRequestHandler, storefrontRedirect} from '@shopify/hydrogen';
 import {createHydrogenRouterContext} from '~/lib/context';
+import {isMaintenanceMode, maintenanceResponse} from '~/lib/maintenance';
 
 /**
  * Export a fetch handler in module format.
@@ -11,6 +12,12 @@ export default {
     env: Env,
     executionContext: ExecutionContext,
   ): Promise<Response> {
+    // Full-site maintenance mode — short-circuit every request before touching
+    // Shopify. Toggle with the MAINTENANCE_MODE env var. See app/lib/maintenance.ts.
+    if (isMaintenanceMode(env)) {
+      return maintenanceResponse();
+    }
+
     try {
       const hydrogenContext = await createHydrogenRouterContext(
         request,
