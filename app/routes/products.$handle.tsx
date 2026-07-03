@@ -1,4 +1,3 @@
-import {useState} from 'react';
 import {Link, useLoaderData} from 'react-router';
 import type {Route} from './+types/products.$handle';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
@@ -180,17 +179,16 @@ export default function ProductPage() {
   const categoryName = deslug(categorySlug);
   const baseName = product.name.split('—')[0].trim();
 
-  // Colour swatches come from this product's Shopify "Color" variants.
+  // Colour variants come from this product's Shopify "Color" variants. They are
+  // shown for information only ("variants available"), NOT as a purchase
+  // selector — so price/image/cart always follow the default variant.
   const colorVariants = pdpVariants.filter((v) => v.color);
   const hasColors = colorVariants.length > 1;
 
-  const [selectedColor, setSelectedColor] = useState<string | null>(
-    colorVariants.find((v) => v.available)?.color ??
-      colorVariants[0]?.color ??
-      null,
-  );
   const selectedVariant =
-    colorVariants.find((v) => v.color === selectedColor) ?? pdpVariants[0];
+    colorVariants.find((v) => v.available) ??
+    colorVariants[0] ??
+    pdpVariants[0];
 
   // Display values follow the selected variant, falling back to the product.
   const colorName = selectedVariant?.color ?? productColor(product);
@@ -253,7 +251,7 @@ export default function ProductPage() {
 
       <div className="pdp-top">
         <ProductGallery
-          key={selectedColor ?? 'default'}
+          key={product.id}
           images={galleryImages}
           name={product.name}
         />
@@ -294,32 +292,33 @@ export default function ProductPage() {
           {hasColors && (
             <div className="pdp-colors">
               <span className="pdp-colors__label">
-                Colour: <strong>{colorName}</strong>
+                Available colours
               </span>
               <div className="pdp-colors__row">
                 {colorVariants.map((v) => (
-                  <button
+                  <span
                     key={v.id}
-                    type="button"
-                    onClick={() => setSelectedColor(v.color)}
-                    className={`pdp-color ${v.color === selectedColor ? 'is-active' : ''}`}
-                    style={
-                      v.image ? undefined : {backgroundColor: colorHex(v.color ?? '')}
-                    }
+                    className="pdp-variant-chip"
                     title={v.color ?? ''}
-                    aria-label={v.color ?? ''}
-                    aria-pressed={v.color === selectedColor}
                   >
-                    {v.image && (
-                      <img
-                        src={v.image}
-                        alt={v.color ?? ''}
-                        width={60}
-                        height={60}
-                        className="pdp-color__img"
-                      />
-                    )}
-                  </button>
+                    <span
+                      className="pdp-color pdp-color--display"
+                      style={
+                        v.image ? undefined : {backgroundColor: colorHex(v.color ?? '')}
+                      }
+                    >
+                      {v.image && (
+                        <img
+                          src={v.image}
+                          alt={v.color ?? ''}
+                          width={60}
+                          height={60}
+                          className="pdp-color__img"
+                        />
+                      )}
+                    </span>
+                    {v.color && <span className="pdp-color__name">{v.color}</span>}
+                  </span>
                 ))}
               </div>
             </div>
