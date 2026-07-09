@@ -20,7 +20,7 @@ const BANNERS: Banner[] = [
   {
     id: 'dot',
     alt: 'DOT true wireless earbuds — mighty sound, 60 hrs playtime',
-    href: '/collections/earbuds',
+    href: '/collections/tws',
     desktop: '/banners/dot-desktop.webp',
     mobile: '/banners/dot-mobile.webp',
   },
@@ -34,14 +34,14 @@ const BANNERS: Banner[] = [
   {
     id: 'charge1pro',
     alt: 'CHARGE 1 PRO — 18W superfast wall charger',
-    href: '/collections/chargers',
+    href: '/collections/charger',
     desktop: '/banners/charge1pro-desktop.webp',
     mobile: '/banners/charge1pro-mobile.webp',
   },
   {
     id: 'ogempire',
     alt: 'OG EMPIRE smartwatch — BT calling, 1.9" display',
-    href: '/collections/smartwatches',
+    href: '/collections/wearables',
     desktop: '/banners/ogempire-desktop.webp',
     mobile: '/banners/ogempire-mobile.webp',
   },
