@@ -1,6 +1,10 @@
-// Bulk / corporate gifting inquiry form. No backend — shows a success state.
+// Bulk / corporate gifting inquiry form. Submissions are delivered by Web3Forms
+// (no backend needed) to the recipient configured on the Web3Forms dashboard.
+// The access key is a PUBLIC key — safe to ship in client code.
 import {useState} from 'react';
 import {validate, type Errors, type Rule} from '~/lib/validation';
+
+const WEB3FORMS_ACCESS_KEY = '7e6c027f-6072-40ea-944f-b80c10033dc8';
 
 type Form = {
   name: string;
@@ -38,6 +42,8 @@ export function CorporateForm() {
   const [form, setForm] = useState<Form>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const update =
     (key: keyof Form) =>
@@ -50,14 +56,51 @@ export function CorporateForm() {
       setErrors((prev) => (prev[key] ? {...prev, [key]: ''} : prev));
     };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const found = validate(form, RULES);
     if (Object.keys(found).length) {
       setErrors(found);
       return;
     }
-    setSent(true);
+    setSending(true);
+    setSubmitError('');
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_ACCESS_KEY,
+          subject: `Corporate gifting enquiry — ${form.company || form.name}`,
+          from_name: 'Ooge Corporate Gifting',
+          name: form.name,
+          company: form.company,
+          email: form.email,
+          phone: form.phone,
+          product_interest: form.product,
+          quantity: form.quantity,
+          message: form.message || '(none)',
+        }),
+      });
+      const data = (await res.json()) as {success?: boolean; message?: string};
+      if (data.success) {
+        setSent(true);
+      } else {
+        setSubmitError(
+          data.message ||
+            'Something went wrong. Please email sales@ooge.in directly.',
+        );
+      }
+    } catch {
+      setSubmitError(
+        'Network error — please email us directly at sales@ooge.in.',
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   if (sent) {
@@ -164,8 +207,13 @@ export function CorporateForm() {
           onChange={update('message')}
         />
       </label>
-      <button type="submit" className="btn btn--primary btn--block">
-        Send enquiry
+      {submitError && <p className="field-error">{submitError}</p>}
+      <button
+        type="submit"
+        className="btn btn--primary btn--block"
+        disabled={sending}
+      >
+        {sending ? 'Sending…' : 'Send enquiry'}
       </button>
       <p className="corp-form__note">
         Typical reply within 1 business day · GST invoice provided
