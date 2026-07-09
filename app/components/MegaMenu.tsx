@@ -1,3 +1,4 @@
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {Link} from 'react-router';
 
 export type MegaCollection = {
@@ -7,12 +8,61 @@ export type MegaCollection = {
   image?: {url: string; altText?: string | null} | null;
 };
 
-// Full-width Categories dropdown — opens on hover/focus. Clean white card grid
-// (distinct from the homepage circular strip and the old pastel pads).
+// Full-width Categories dropdown. Open state is controlled in JS (not pure CSS
+// :hover) so it reliably CLOSES when the pointer leaves — a plain :hover/:focus-
+// within menu can stay stuck open after a click leaves focus inside the panel.
+// Opens on hover/focus; closes on mouse-leave, Escape, or picking a category.
 export function MegaMenu({collections}: {collections: MegaCollection[]}) {
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTimer = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  };
+
+  // Small delay so moving the pointer across the gap between the trigger and the
+  // panel doesn't flicker the menu shut.
+  const scheduleClose = useCallback(() => {
+    clearTimer();
+    closeTimer.current = setTimeout(() => setOpen(false), 120);
+  }, []);
+
+  const openNow = useCallback(() => {
+    clearTimer();
+    setOpen(true);
+  }, []);
+
+  const closeNow = useCallback(() => {
+    clearTimer();
+    setOpen(false);
+  }, []);
+
+  useEffect(() => clearTimer, []);
+
   return (
-    <div className="has-mega">
-      <Link to="/collections/all" className="has-mega__trigger">
+    <div
+      className={`has-mega ${open ? 'is-open' : ''}`}
+      onMouseEnter={openNow}
+      onMouseLeave={scheduleClose}
+      onFocus={openNow}
+      onBlur={(e) => {
+        // Only close if focus left the whole menu (not moved to an inner item).
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) closeNow();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') closeNow();
+      }}
+    >
+      <Link
+        to="/collections/all"
+        className="has-mega__trigger"
+        aria-expanded={open}
+        aria-haspopup="true"
+        onClick={closeNow}
+      >
         Categories{' '}
         <span className="caret" aria-hidden>
           ▾
@@ -23,7 +73,7 @@ export function MegaMenu({collections}: {collections: MegaCollection[]}) {
         <div className="mega__inner container">
           <div className="mega__head">
             <span className="mega__eyebrow">Shop by category</span>
-            <Link to="/collections/all" className="mega__all">
+            <Link to="/collections/all" className="mega__all" onClick={closeNow}>
               View all →
             </Link>
           </div>
@@ -35,6 +85,7 @@ export function MegaMenu({collections}: {collections: MegaCollection[]}) {
                 to={`/collections/${c.handle}`}
                 className="mega-card"
                 role="menuitem"
+                onClick={closeNow}
               >
                 <span className="mega-card__media">
                   {c.image ? (

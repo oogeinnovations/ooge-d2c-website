@@ -41,7 +41,7 @@ export default function SearchPage() {
   if (type === 'predictive') return null;
 
   return (
-    <div className="search">
+    <div className="search-page">
       <h1>Search</h1>
       <SearchForm>
         {({inputRef}) => (
