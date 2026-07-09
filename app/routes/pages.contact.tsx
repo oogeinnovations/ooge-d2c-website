@@ -8,7 +8,7 @@ export default function ContactPage() {
       <h1>Contact us</h1>
       <p>
         Questions about an order or a product? Email{' '}
-        <a href="mailto:support@ooge.example">support@ooge.example</a> and we will
+        <a href="mailto:sales@ooge.in">sales@ooge.in</a> and we will
         reply within one business day.
       </p>
     </main>
