@@ -131,11 +131,42 @@ export function productColor(p: Pick<Product, 'name'>): string | null {
 
 const COLOR_HEX: Record<string, string> = {
   white: '#f3f3f3', black: '#111114', yellow: '#fcca00',
-  grey: '#9b9b9b', gray: '#9b9b9b', blue: '#2f6fed',
-  red: '#e23b3b', green: '#27ae60', beige: '#e6d6b8',
-  navy: '#1f2a44', pink: '#ff5fa2', teal: '#16b5a3',
+  grey: '#9b9b9b', gray: '#9b9b9b', silver: '#c8ccd0',
+  blue: '#2f6fed', navy: '#1f2a44', red: '#e23b3b',
+  green: '#27ae60', beige: '#e6d6b8', pink: '#ff5fa2',
+  teal: '#16b5a3', purple: '#7c3aed', violet: '#8b5cf6',
+  orange: '#f2711c', gold: '#d4af37', brown: '#8a5a3b',
+  maroon: '#7b1e2b', cyan: '#22b8cf', magenta: '#d6409f',
+  cream: '#f4ecd8', ivory: '#fffff0', charcoal: '#36393f',
+  rose: '#e8909c', lavender: '#b39ddb', mint: '#98e2c6',
 };
 
+// Ordered longest-first so "rose gold" matches "gold" before "rose", and
+// "space grey"/"midnight blue" resolve to their base colour word.
+const COLOR_WORDS = Object.keys(COLOR_HEX).sort((a, b) => b.length - a.length);
+
+// Deterministic fallback: turn an unknown colour name into a stable, distinct
+// hue so two different unknown colours never collapse to the same swatch.
+function hashHue(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) {
+    h = (h * 31 + name.charCodeAt(i)) % 360;
+  }
+  return `hsl(${h}, 42%, 62%)`;
+}
+
+// A rainbow swatch for products sold as "Multicolor"/"Rainbow"/"Assorted".
+// This is a gradient, so callers must apply it via the `background` shorthand
+// (NOT `backgroundColor`, which only accepts a solid colour).
+export const MULTICOLOR_SWATCH =
+  'conic-gradient(from 90deg, #e23b3b, #fcca00, #27ae60, #22b8cf, #2f6fed, #7c3aed, #e23b3b)';
+
 export function colorHex(name: string): string {
-  return COLOR_HEX[name.toLowerCase()] ?? '#cfcfcf';
+  const key = name.trim().toLowerCase();
+  if (/multi|rainbow|assorted|colou?rful/.test(key)) return MULTICOLOR_SWATCH;
+  if (COLOR_HEX[key]) return COLOR_HEX[key];
+  // Compound name? Match a known colour word inside it (e.g. "Rose Gold").
+  const word = COLOR_WORDS.find((w) => key.includes(w));
+  if (word) return COLOR_HEX[word];
+  return hashHue(key);
 }

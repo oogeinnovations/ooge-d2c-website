@@ -127,7 +127,7 @@ async function loadCriticalData({context}: Route.LoaderArgs) {
 const HEADER_COLLECTIONS_QUERY = `#graphql
   query HeaderCollections($country: CountryCode, $language: LanguageCode)
   @inContext(country: $country, language: $language) {
-    collections(first: 12, sortKey: TITLE) {
+    collections(first: 50, sortKey: TITLE) {
       nodes {
         id
         title

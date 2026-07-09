@@ -149,7 +149,7 @@ h1, h2, h3, h4 {
 .has-mega__trigger { color: var(--text); font-weight: 600; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 .has-mega__trigger:hover { color: var(--accent-text); }
 .caret { font-size: 0.65rem; transition: transform .18s; }
-.has-mega:hover .caret { transform: rotate(180deg); }
+.has-mega.is-open .caret { transform: rotate(180deg); }
 .mega {
   position: absolute; left: 0; right: 0; top: 100%;
   background: #fff; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
@@ -157,7 +157,7 @@ h1, h2, h3, h4 {
   opacity: 0; visibility: hidden; transform: translateY(6px);
   transition: opacity .18s, transform .18s, visibility .18s; z-index: 40;
 }
-.has-mega:hover .mega, .has-mega:focus-within .mega { opacity: 1; visibility: visible; transform: translateY(0); }
+.has-mega.is-open .mega { opacity: 1; visibility: visible; transform: translateY(0); }
 .mega__inner { padding-top: 18px; padding-bottom: 22px; }
 .mega__all { display: inline-block; margin-top: 4px; font-weight: 800; font-size: 0.9rem; color: var(--accent-text); }
 
@@ -224,8 +224,10 @@ h1, h2, h3, h4 {
 
 /* ---- Hero banner carousel (Boult-style) ---- */
 .herobanner { position: relative; background: radial-gradient(130% 130% at 78% 18%, #20222e 0%, #121319 45%, #0a0a0e 100%); overflow: hidden; color: #fff; }
-.herobanner__inner { position: relative; min-height: 520px; }
-.heroslide { position: absolute; inset: 0; display: grid; grid-template-columns: 1.05fr 0.95fr; align-items: center; gap: 32px; padding: 56px 8px; opacity: 0; visibility: hidden; transition: opacity .55s ease, visibility .55s; }
+.herobanner__inner { position: relative; width: 100%; aspect-ratio: 1920 / 700; max-height: 760px; }
+.heroslide { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .55s ease, visibility .55s; }
+.heroslide__link { display: block; width: 100%; height: 100%; }
+.heroslide picture { display: block; width: 100%; height: 100%; }
 .heroslide.is-active { opacity: 1; visibility: visible; }
 .heroslide__eyebrow { display: inline-block; color: var(--brand); font-weight: 800; font-size: 0.82rem; text-transform: uppercase; letter-spacing: .14em; margin-bottom: 14px; }
 .heroslide__title { font-size: clamp(2.2rem, 5.2vw, 3.8rem); font-weight: 900; line-height: 1.05; margin: 0 0 16px; max-width: 13ch; color: #fff; }
@@ -235,7 +237,7 @@ h1, h2, h3, h4 {
 .heroslide__proof .stars { color: var(--brand); letter-spacing: 2px; }
 .heroslide__art { position: relative; display: grid; place-items: center; height: 100%; }
 .heroslide__glow { position: absolute; width: 78%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(252,202,0,.30) 0%, rgba(252,202,0,.10) 38%, transparent 68%); filter: blur(8px); z-index: 0; }
-.heroslide__img { position: relative; z-index: 1; width: auto; max-width: 100%; height: auto; max-height: 460px; object-fit: contain; filter: drop-shadow(0 36px 50px rgba(0,0,0,.55)); }
+.heroslide__img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .herobanner__nav { display: none; }
 /* outline button (for dark surfaces) */
 .btn--outline { background: transparent; border-color: rgba(255,255,255,.32); color: #fff; }
@@ -377,7 +379,10 @@ h1, h2, h3, h4 {
 
 /* ---- Product grid & cards ---- */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
-.card { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; transition: border-color .2s, transform .12s, box-shadow .2s; display: flex; flex-direction: column; }
+/* Explicit text colour: the card is always a light surface, so its text must
+   stay dark even inside a dark band (e.g. Top Deals' .row-band--dark sets
+   color:#fff, which would otherwise make the title/price white-on-white). */
+.card { position: relative; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; transition: border-color .2s, transform .12s, box-shadow .2s; display: flex; flex-direction: column; }
 .card:hover { border-color: var(--brand); transform: translateY(-3px); box-shadow: var(--shadow); }
 .card__media { position: relative; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; background: radial-gradient(80% 80% at 50% 30%, var(--gray-soft), var(--surface)); }
 .card__img { width: 100%; height: 100%; object-fit: contain; transition: transform .3s; }
@@ -737,13 +742,8 @@ a.contact-card:hover { border-color: var(--brand); }
   .summary { margin-left: 0; max-width: none; }
   .site-nav { display: none; }
   .newsletter__form input { min-width: 0; flex: 1; }
-  /* hero carousel: stack copy over image, hide side arrows */
-  .herobanner__inner { min-height: 0; }
-  .heroslide { position: relative; grid-template-columns: 1fr; text-align: center; padding: 28px 20px 48px; }
-  .heroslide:not(.is-active) { display: none; }
-  .heroslide__sub { margin-left: auto; margin-right: auto; }
-  .heroslide__art { order: -1; }
-  .heroslide__img { max-height: 240px; }
+  /* hero carousel: switch to the portrait (750x1000) banner ratio */
+  .herobanner__inner { aspect-ratio: 3 / 4; max-height: 86vh; }
   .herobanner__nav { display: none; }
   .carousel__nav { display: none; }
   .carousel__track .card { flex-basis: 60vw; }
@@ -821,22 +821,156 @@ a.contact-card:hover { border-color: var(--brand); }
 .icon-btn, .cart-badge { transition: transform 0.18s var(--ease), color 0.18s var(--ease); }
 .icon-btn:hover, .cart-badge:hover { transform: translateY(-1px); }
 
+/* ---- Search results page (/search) ----
+   NOTE: this is the full results PAGE, distinct from the header's .search pill.
+   Keep the class name .search-page so it never collides with .search above. */
+.search-page {
+  width: 100%;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 48px 40px 80px;
+}
+.search-page h1 { font-size: clamp(1.5rem, 4vw, 1.9rem); letter-spacing: -0.02em; margin: 0 0 24px; }
+.search-page form { display: flex; gap: 10px; max-width: 520px; margin: 0 0 36px; }
+.search-page input[type='search'] {
+  flex: 1;
+  height: 48px;
+  padding: 0 18px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 0.95rem;
+}
+.search-page input[type='search']:focus-visible {
+  outline: none;
+  background: #fff;
+  border-color: var(--ink);
+  box-shadow: var(--ring);
+}
+.search-page button[type='submit'] {
+  height: 48px;
+  padding: 0 26px;
+  border: none;
+  border-radius: 14px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.18s var(--ease);
+}
+.search-page button[type='submit']:hover { filter: brightness(1.2); }
+
+/* section headings ("Products", "Pages", "Articles") */
+.search-page .search-result h2 {
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 18px;
+}
+.search-page .search-result { margin-bottom: 40px; }
+
+/* product grid + cards — mirrors the store's .card look */
+.search-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 22px;
+}
+.search-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.32s var(--ease-out), box-shadow 0.32s var(--ease),
+    border-color 0.32s var(--ease);
+}
+.search-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+  border-color: transparent;
+}
+.search-card__media {
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: linear-gradient(160deg, #fafbfc 0%, #eef0f4 100%);
+  overflow: hidden;
+}
+.search-card__img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.5s var(--ease-out); }
+.search-card:hover .search-card__img { transform: scale(1.07); }
+.search-card__img--placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+.search-card__img--placeholder span {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.search-card__body { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.search-card__title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.98rem;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
+.search-card__price { font-weight: 700; letter-spacing: -0.02em; }
+
+/* pagination links */
+.search-pager { display: flex; justify-content: center; margin: 8px 0; }
+.search-pager:empty { display: none; }
+.search-pager__btn {
+  display: inline-block;
+  padding: 11px 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.18s var(--ease), color 0.18s var(--ease);
+}
+.search-pager__btn:hover { border-color: var(--ink); color: var(--ink); }
+
+/* pages / articles link lists */
+.search-page .search-results-item { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.search-page .search-results-item a { text-decoration: none; color: var(--text); font-weight: 500; }
+.search-page .search-results-item a:hover { color: var(--ink); }
+
+/* ---- Search page: responsive ---- */
+/* Tablet — tighten gutters and grid a touch */
+@media (max-width: 900px) {
+  .search-page { padding: 40px 28px 72px; }
+  .search-products-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
+}
+/* Mobile — smaller gutters, denser 2-up grid */
+@media (max-width: 640px) {
+  .search-page { padding: 28px 18px 60px; }
+  .search-products-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .search-card__body { padding: 12px 12px 14px; }
+  .search-card__title { font-size: 0.9rem; }
+}
+/* Small phones — stack the search form so the button never gets clipped */
+@media (max-width: 460px) {
+  .search-page form { flex-direction: column; gap: 12px; }
+  .search-page button[type='submit'] { width: 100%; }
+  .search-products-grid { gap: 12px; }
+}
+
 /* ---- Announcement ---- */
 .announce { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.01em; }
 
-/* ---- Hero ---- */
-.herobanner { background: radial-gradient(120% 130% at 76% 16%, #23252f 0%, #14151b 46%, #0a0a0e 100%); }
-.herobanner__inner { min-height: 560px; }
-.heroslide__eyebrow { letter-spacing: 0.18em; }
-.heroslide__title { font-weight: 700; letter-spacing: -0.035em; font-size: clamp(2.4rem, 5.4vw, 4.1rem); line-height: 1.03; }
-.heroslide__glow { background: radial-gradient(circle, rgba(252, 202, 0, 0.34) 0%, rgba(252, 202, 0, 0.1) 40%, transparent 70%); }
-.heroslide.is-active .heroslide__copy > * { animation: fadeUp 0.7s var(--ease-out) backwards; }
-.heroslide.is-active .heroslide__copy > *:nth-child(1) { animation-delay: 0.04s; }
-.heroslide.is-active .heroslide__copy > *:nth-child(2) { animation-delay: 0.1s; }
-.heroslide.is-active .heroslide__copy > *:nth-child(3) { animation-delay: 0.16s; }
-.heroslide.is-active .heroslide__copy > *:nth-child(4) { animation-delay: 0.22s; }
-.heroslide.is-active .heroslide__copy > *:nth-child(5) { animation-delay: 0.28s; }
-.heroslide.is-active .heroslide__img { animation: fadeIn 0.9s var(--ease-out) backwards; animation-delay: 0.1s; }
+/* ---- Hero (full-bleed banner carousel) ---- */
+/* Dark fallback shown only until the banner image paints. */
+.herobanner { background: #0a0a0e; }
+.heroslide.is-active .heroslide__img { animation: fadeIn 0.6s var(--ease-out) backwards; }
 .dot { transition: width 0.25s var(--ease), background 0.25s var(--ease); }
 
 /* ---- Categories mega-menu dropdown — clean card grid ---- */
@@ -1552,49 +1686,49 @@ a.contact-card:hover { border-color: var(--brand); }
   color: var(--accent-text);
 }
 .mobile-menu__cats-head a { font-size: 0.85rem; font-weight: 600; color: var(--accent-text); }
+/* Compact chip layout — wraps many categories into a small area so the mobile
+   drawer needs little or no scrolling (vs. the old tall 3-col image cards). */
 .mobile-cats {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .mobile-cat {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 6px 12px;
+  gap: 7px;
+  padding: 8px 13px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 999px;
   background: var(--surface);
-  text-align: center;
-  transition: border-color 0.2s var(--ease), transform 0.15s var(--ease);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  white-space: nowrap;
+  transition: border-color 0.2s var(--ease), background 0.2s var(--ease),
+    color 0.2s var(--ease);
 }
-.mobile-cat:hover { border-color: var(--brand); transform: translateY(-2px); }
+.mobile-cat:hover,
+.mobile-cat:active { border-color: var(--brand); background: var(--brand); color: var(--brand-ink); }
+/* Tiny thumbnail sits inline inside the chip. */
 .mobile-cat__media {
-  width: 100%;
-  height: 60px;
-  border-radius: 10px;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 50%;
   background: radial-gradient(80% 80% at 50% 28%, #fbfcfd 0%, #eceef3 100%);
   display: grid;
   place-items: center;
   overflow: hidden;
 }
-.mobile-cat__img { width: 46px; height: 46px; object-fit: contain; mix-blend-mode: multiply; }
-.mobile-cat__emoji { font-size: 1.5rem; }
-.mobile-cat__name {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 0.74rem;
-  letter-spacing: -0.01em;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
+.mobile-cat__img { width: 18px; height: 18px; object-fit: contain; mix-blend-mode: multiply; }
+.mobile-cat__emoji { font-size: 0.9rem; }
+.mobile-cat__name { max-width: none; }
 
 /* show the hamburger + right-align the header actions exactly when the inline
    nav collapses (matches the 1080px nav-hide breakpoint) */
@@ -1640,9 +1774,25 @@ a.contact-card:hover { border-color: var(--brand); }
   .values-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .pdp-highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-/* very small phones: feature strip reads better as a single column */
-@media (max-width: 430px) {
-  .features__grid { grid-template-columns: 1fr; gap: 14px; }
+/* Phones: the old side-by-side layout clipped the right column off-screen.
+   Render a clean, centered 2x2 badge grid (icon on top) instead — text wraps,
+   nothing overflows. Higher-specificity selectors (.features .feature...) win
+   the cascade over the max-width:900px 2-col rules above. */
+@media (max-width: 640px) {
+  .features .features__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 12px;
+    padding: 22px 16px;
+  }
+  .features .feature {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+  }
+  .features .feature > div { align-items: center; }
+  .features .feature strong { font-size: 0.9rem; }
+  .features .feature__sub { font-size: 0.76rem; }
 }
 
 /* ==========================================================================

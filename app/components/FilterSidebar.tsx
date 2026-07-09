@@ -250,7 +250,7 @@ export function FilterSidebar({
                   <button
                     key={c.name}
                     className={`swatch ${selectedColors.includes(c.name) ? 'is-active' : ''}`}
-                    style={{backgroundColor: c.hex}}
+                    style={{background: c.hex}}
                     onClick={() => toggleColor(c.name)}
                     aria-label={c.name}
                     title={c.name}

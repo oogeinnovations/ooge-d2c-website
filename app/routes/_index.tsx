@@ -66,8 +66,8 @@ export default function Homepage() {
       {/* Category strip (admin collections) */}
       <CategoryStrip collections={collections} />
 
-      {/* Hero carousel (admin collections) */}
-      <HeroCarousel collections={collections} />
+      {/* Hero carousel (full-bleed marketing banners; see HeroCarousel.tsx) */}
+      <HeroCarousel />
 
       {/* Trust strip */}
       <FeatureStrip />

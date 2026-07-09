@@ -304,7 +304,7 @@ export default function ProductPage() {
                     <span
                       className="pdp-color pdp-color--display"
                       style={
-                        v.image ? undefined : {backgroundColor: colorHex(v.color ?? '')}
+                        v.image ? undefined : {background: colorHex(v.color ?? '')}
                       }
                     >
                       {v.image && (

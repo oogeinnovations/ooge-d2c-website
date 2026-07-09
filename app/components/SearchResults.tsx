@@ -117,37 +117,51 @@ function SearchResultsProducts({
             const image = product?.selectedOrFirstAvailableVariant?.image;
 
             return (
-              <div className="search-results-item" key={product.id}>
-                <Link prefetch="intent" to={productUrl}>
-                  {image && (
-                    <Image data={image} alt={product.title} width={50} />
+              <Link
+                className="search-card"
+                prefetch="intent"
+                to={productUrl}
+                key={product.id}
+              >
+                <div className="search-card__media">
+                  {image ? (
+                    <Image
+                      className="search-card__img"
+                      data={image}
+                      alt={product.title}
+                      width={320}
+                      sizes="(min-width: 1024px) 220px, (min-width: 640px) 30vw, 45vw"
+                    />
+                  ) : (
+                    <div className="search-card__img--placeholder">
+                      <span>OOGE</span>
+                    </div>
                   )}
-                  <div>
-                    <p>{product.title}</p>
-                    <small>{price && <Money data={price} />}</small>
-                  </div>
-                </Link>
-              </div>
+                </div>
+                <div className="search-card__body">
+                  <p className="search-card__title">{product.title}</p>
+                  <span className="search-card__price">
+                    {price && <Money data={price} />}
+                  </span>
+                </div>
+              </Link>
             );
           });
 
           return (
-            <div>
-              <div>
-                <PreviousLink>
-                  {isLoading ? 'Loading...' : <span>↑ Load previous</span>}
+            <>
+              <div className="search-pager">
+                <PreviousLink className="search-pager__btn">
+                  {isLoading ? 'Loading…' : <span>↑ Load previous</span>}
                 </PreviousLink>
               </div>
-              <div>
-                {ItemsMarkup}
-                <br />
-              </div>
-              <div>
-                <NextLink>
-                  {isLoading ? 'Loading...' : <span>Load more ↓</span>}
+              <div className="search-products-grid">{ItemsMarkup}</div>
+              <div className="search-pager">
+                <NextLink className="search-pager__btn">
+                  {isLoading ? 'Loading…' : <span>Load more ↓</span>}
                 </NextLink>
               </div>
-            </div>
+            </>
           );
         }}
       </Pagination>
