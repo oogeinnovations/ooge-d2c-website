@@ -19,6 +19,8 @@ export default async function handleRequest(
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
       storeDomain: context.env.PUBLIC_STORE_DOMAIN,
     },
+    // Allow the corporate-gifting form to POST enquiries to Web3Forms.
+    connectSrc: ["'self'", 'https://api.web3forms.com'],
   });
 
   const body = await renderToReadableStream(

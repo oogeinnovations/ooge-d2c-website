@@ -116,9 +116,9 @@ export default function SupportPage() {
       <section className="container section">
         <h2 className="section-title">Contact us</h2>
         <div className="contact-cards">
-          <a className="contact-card" href="mailto:support@ooge.example">
+          <a className="contact-card" href="mailto:sales@ooge.in">
             <strong>Email</strong>
-            <span>support@ooge.example</span>
+            <span>sales@ooge.in</span>
           </a>
           <a className="contact-card" href="tel:+919900542440">
             <strong>Phone / WhatsApp</strong>

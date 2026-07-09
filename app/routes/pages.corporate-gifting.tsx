@@ -68,7 +68,7 @@ export default function CorporateGiftingPage() {
             <p>
               Tell us what you need and we’ll send a tailored quote — usually
               within one business day. Prefer to talk? Email{' '}
-              <a href="mailto:corporate@ooge.example">corporate@ooge.example</a> or
+              <a href="mailto:sales@ooge.in">sales@ooge.in</a> or
               call <a href="tel:+919900542440">+91 99005 42440</a>.
             </p>
             <p className="corp-cta__back">
