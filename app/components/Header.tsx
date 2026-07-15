@@ -149,8 +149,11 @@ function CartBadge() {
         strokeLinejoin="round"
         aria-hidden
       >
-        <path d="M5 7h14l-1.2 13.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8L5 7z" />
-        <path d="M9 7a3 3 0 0 1 6 0" />
+        {/* Shopping cart (wide basket + wheels) — the old tapered-bag glyph read
+            as a trash bin. */}
+        <circle cx="9" cy="21" r="1" />
+        <circle cx="20" cy="21" r="1" />
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
       </svg>
       {mounted && count > 0 && <span className="cart-badge__count">{count}</span>}
     </button>

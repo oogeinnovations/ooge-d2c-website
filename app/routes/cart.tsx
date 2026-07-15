@@ -5,8 +5,6 @@ import {formatPrice} from '~/lib/format';
 
 // Client-rendered demo cart page (visual clone of the Next.js app). Reads from
 // the client-side zustand cart, not Shopify's server cart.
-const SHIPPING = 4900; // ₹49 flat; free over ₹999
-const FREE_SHIPPING_THRESHOLD = 99900;
 
 export const meta: MetaFunction = () => [{title: 'Your cart | Ooge'}];
 
@@ -31,8 +29,6 @@ export default function CartPage() {
       </main>
     );
   }
-
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING;
 
   return (
     <main className="container cart">
@@ -84,14 +80,13 @@ export default function CartPage() {
           <span>Subtotal</span>
           <span>{formatPrice(subtotal)}</span>
         </div>
-        <div className="summary__row">
-          <span>Shipping</span>
-          <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
-        </div>
         <div className="summary__row summary__row--total">
           <span>Total</span>
-          <span>{formatPrice(subtotal + shipping)}</span>
+          <span>{formatPrice(subtotal)}</span>
         </div>
+        <p className="summary__note">
+          Shipping calculated at checkout.
+        </p>
         <Link to="/checkout" className="btn btn--primary btn--block">
           Proceed to checkout
         </Link>

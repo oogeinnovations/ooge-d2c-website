@@ -17,7 +17,7 @@ export function DeliveryCheck() {
             ok
               ? {
                   ok: true,
-                  text: `Delivers to ${pin} in 2–5 business days · Free over ₹999`,
+                  text: `Delivers to ${pin} in 2–5 business days`,
                 }
               : {ok: false, text: 'Please enter a valid 6-digit PIN code'},
           );

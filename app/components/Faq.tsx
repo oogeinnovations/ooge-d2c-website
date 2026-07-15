@@ -8,11 +8,7 @@ const DEFAULT_FAQS = [
   },
   {
     q: 'How long does delivery take?',
-    a: 'Orders are dispatched in 24 hours and delivered in 2–5 business days. Shipping is free on orders over ₹999.',
-  },
-  {
-    q: 'Can I return or exchange it?',
-    a: 'Yes — we offer 7-day easy returns. The product must be unused and in its original packaging.',
+    a: 'Orders are dispatched in 24 hours and delivered in 2–5 business days.',
   },
   {
     q: 'Is Cash on Delivery available?',
