@@ -330,9 +330,9 @@ export default function ProductPage() {
 
           <ul className="pdp-trust">
             <li>🛡️ 1-yr warranty</li>
-            <li>↩️ 7-day returns</li>
-            <li>🚚 Free over ₹999</li>
+            <li>✅ Genuine product</li>
             <li>🔒 Secure checkout</li>
+            <li>🏷️ Direct from brand</li>
           </ul>
         </div>
       </div>

@@ -7,8 +7,6 @@ import {useCartStore} from '~/stores/cart';
 import {useUiStore} from '~/stores/ui';
 import {formatPrice, discountPct} from '~/lib/format';
 
-const FREE_SHIP = 99900; // ₹999 free-shipping threshold (paise)
-
 export function CartDrawer() {
   const open = useUiStore((s) => s.cartOpen);
   const close = useUiStore((s) => s.closeCart);
@@ -37,8 +35,6 @@ export function CartDrawer() {
     (s, i) => s + Math.max(0, i.mrp - i.price) * i.qty,
     0,
   );
-  const remaining = Math.max(0, FREE_SHIP - subtotal);
-  const shipPct = Math.min(100, Math.round((subtotal / FREE_SHIP) * 100));
 
   return (
     <>
@@ -78,22 +74,6 @@ export function CartDrawer() {
         ) : (
           <>
             <div className="cart-drawer__body">
-              <div className="ship-bar">
-                {remaining > 0 ? (
-                  <span>
-                    You’re <strong>{formatPrice(remaining)}</strong> away from{' '}
-                    <strong>free shipping</strong>
-                  </span>
-                ) : (
-                  <span>
-                    🎉 You’ve unlocked <strong>free shipping</strong>!
-                  </span>
-                )}
-                <div className="ship-bar__track">
-                  <div className="ship-bar__fill" style={{width: `${shipPct}%`}} />
-                </div>
-              </div>
-
               <ul className="dlines">
                 {items.map((i) => {
                   const off = discountPct(i.price, i.mrp);

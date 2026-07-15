@@ -16,7 +16,7 @@ const TOPICS = [
   },
   {
     title: 'Shipping',
-    sub: 'Free over ₹999. Dispatched in 24h, delivered in 2–5 days.',
+    sub: 'Dispatched in 24h, delivered in 2–5 business days.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 3l8 4v6c0 4-3.5 7-8 8-4.5-1-8-4-8-8V7z" />
@@ -25,7 +25,7 @@ const TOPICS = [
   },
   {
     title: 'Returns & refunds',
-    sub: '7-day easy returns on unused items in original packaging.',
+    sub: 'Report defects or damage — we’ll arrange a repair or replacement.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v4h4" />
@@ -64,7 +64,7 @@ const TOPICS = [
 const SUPPORT_FAQS = [
   {q: 'How do I claim warranty?', a: 'Register your warranty below, then reach us with your order number and a short description of the issue. We’ll arrange a repair or replacement.'},
   {q: 'What does the warranty cover?', a: 'A 1-year warranty against manufacturing defects. It does not cover physical/water damage (beyond the rated IP level) or normal wear.'},
-  {q: 'How do I return an item?', a: 'Email us within 7 days of delivery with your order number. The product must be unused and in its original packaging.'},
+  {q: 'How do I return an item?', a: 'Email us with your order number and a short description of the issue, and we’ll guide you through the process. The product must be unused and in its original packaging.'},
   {q: 'When will my refund arrive?', a: 'Refunds are processed within 5–7 business days of the returned item passing inspection, to your original payment method.'},
   {q: 'Do you offer Cash on Delivery?', a: 'Yes, COD is available on most pincodes across India.'},
 ];

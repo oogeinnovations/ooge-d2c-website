@@ -1,7 +1,9 @@
+// No shipping/delivery claims — fulfilment isn't integrated yet. These are
+// brand/product promises that hold regardless of logistics.
 const FEATURES = [
-  {icon: '🚚', title: 'Free shipping', sub: 'On orders over ₹999'},
   {icon: '🛡️', title: '1-year warranty', sub: 'On every product'},
-  {icon: '↩️', title: '7-day returns', sub: 'No-questions-asked'},
+  {icon: '✅', title: 'Genuine products', sub: 'Straight from the brand'},
+  {icon: '🔒', title: 'Secure checkout', sub: '100% safe payments'},
   {icon: '💬', title: 'Real support', sub: 'Mon–Sat, 7-day reply'},
 ];
 
