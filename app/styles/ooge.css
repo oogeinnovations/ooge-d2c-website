@@ -1956,3 +1956,17 @@ a.contact-card:hover { border-color: var(--brand); }
   max-width: 68px;
   overflow-wrap: anywhere;
 }
+
+/* ---- Contact page (form first, above the fold) ---- */
+.contact-top { background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.contact-top__grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 40px; align-items: start; padding: 48px 40px; }
+.contact-top__eyebrow { display: inline-block; color: var(--accent-text); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; font-size: 0.8rem; margin-bottom: 12px; }
+.contact-top__text h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 900; margin: 0 0 14px; }
+.contact-top__text p { color: var(--muted); line-height: 1.7; margin: 0 0 12px; }
+.contact-top__text a { color: var(--accent-text); font-weight: 700; }
+@media (max-width: 760px) {
+  .contact-top__grid { grid-template-columns: 1fr; gap: 26px; }
+}
+@media (max-width: 600px) {
+  .contact-top__grid { padding: 32px 20px; }
+}
