@@ -1,43 +1,26 @@
 // Contact-us enquiry form.
 //
-// NOTE: this form has no backend — submitting validates the fields and shows a
-// confirmation, but the enquiry is not sent or stored anywhere. Wire it to a
-// delivery route before relying on it for real leads.
+// Submissions POST to `app/routes/api.contact.tsx`, which stores the lead in a
+// Google Sheet and sends the visitor a WhatsApp acknowledgement with the
+// catalogue PDF attached. This form intentionally sends no email — enquiry mail
+// belongs to the corporate gifting form.
 import {useState} from 'react';
-import {validate, type Errors, type Rule} from '~/lib/validation';
-
-type Form = {
-  name: string;
-  phone: string;
-  email: string;
-  company: string;
-  city: string;
-};
-
-const EMPTY: Form = {
-  name: '',
-  phone: '',
-  email: '',
-  company: '',
-  city: '',
-};
-
-const RULES: Record<string, Rule> = {
-  name: {label: 'Full name', required: true},
-  phone: {
-    label: 'WhatsApp number',
-    required: true,
-    pattern: /^[0-9+\-\s]{7,15}$/,
-    message: 'Enter a valid phone number',
-  },
-  city: {label: 'City', required: true},
-  email: {label: 'Email', email: true},
-};
+import {validate, type Errors} from '~/lib/validation';
+import {
+  CONTACT_RULES as RULES,
+  EMPTY_CONTACT as EMPTY,
+  type ContactFormValues as Form,
+} from '~/lib/contact';
 
 export function ContactForm() {
   const [form, setForm] = useState<Form>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  // Whether the catalogue actually went out on WhatsApp. The enquiry is still a
+  // success without it, so the confirmation copy adapts instead of erroring.
+  const [catalogueSent, setCatalogueSent] = useState(false);
 
   const update =
     (key: keyof Form) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,29 +28,70 @@ export function ContactForm() {
       setErrors((prev) => (prev[key] ? {...prev, [key]: ''} : prev));
     };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const found = validate(form, RULES);
     if (Object.keys(found).length) {
       setErrors(found);
       return;
     }
-    setSent(true);
+    setSending(true);
+    setSubmitError('');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(form),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        catalogueSent?: boolean;
+        error?: string;
+        fieldErrors?: Errors;
+      } | null;
+
+      if (!res.ok || !data?.ok) {
+        if (data?.fieldErrors) setErrors(data.fieldErrors);
+        setSubmitError(
+          data?.error ??
+            'Something went wrong. Please WhatsApp us on +91 73497 43401.',
+        );
+        return;
+      }
+
+      setCatalogueSent(Boolean(data.catalogueSent));
+      setSent(true);
+    } catch {
+      setSubmitError(
+        'Network error — please WhatsApp us directly on +91 73497 43401.',
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   if (sent) {
     return (
       <div className="corp-form corp-form--done" id="contact-form">
         <h3>Thanks, {form.name.split(' ')[0] || 'there'}!</h3>
-        <p>
-          We&rsquo;ve received your details and our team will reach out on{' '}
-          <strong>{form.phone}</strong> within one business day.
-        </p>
+        {catalogueSent ? (
+          <p>
+            We&rsquo;ve sent our catalogue to <strong>{form.phone}</strong> on
+            WhatsApp. Our team will follow up within one business day.
+          </p>
+        ) : (
+          <p>
+            We&rsquo;ve received your details and our team will reach out on{' '}
+            <strong>{form.phone}</strong> within one business day.
+          </p>
+        )}
         <button
           className="btn btn--ghost"
           onClick={() => {
             setForm(EMPTY);
             setErrors({});
+            setSubmitError('');
+            setCatalogueSent(false);
             setSent(false);
           }}
         >
@@ -82,7 +106,7 @@ export function ContactForm() {
       className="corp-form"
       id="contact-form"
       noValidate
-      onSubmit={handleSubmit}
+      onSubmit={(e) => void handleSubmit(e)}
     >
       <h3>Send us a message</h3>
       <label>
@@ -133,11 +157,16 @@ export function ContactForm() {
           <input value={form.company} onChange={update('company')} />
         </label>
       </div>
-      <button type="submit" className="btn btn--primary btn--block">
-        Send message
+      {submitError && <p className="field-error">{submitError}</p>}
+      <button
+        type="submit"
+        className="btn btn--primary btn--block"
+        disabled={sending}
+      >
+        {sending ? 'Sending…' : 'Send message'}
       </button>
       <p className="corp-form__note">
-        We typically reply within 1 business day
+        We&rsquo;ll WhatsApp you our catalogue and reply within 1 business day
       </p>
     </form>
   );
