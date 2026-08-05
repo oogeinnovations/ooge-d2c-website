@@ -140,6 +140,7 @@ h1, h2, h3, h4 {
 .site-header__bar { display: flex; align-items: center; gap: 24px; height: 76px; }
 .logo { display: block; border-radius: 8px; height: auto; }
 .site-header__logo { display: inline-flex; align-items: center; gap: 12px; }
+.header-lockup { display: block; width: 150px; height: auto; }
 .brand-tag { display: flex; align-items: center; gap: 8px; padding-left: 12px; border-left: 1px solid var(--line); }
 .brand-tag__hl { font-size: 1.3rem; font-weight: 900; line-height: 1; color: var(--ink); }
 .brand-tag__txt { font-size: 0.56rem; font-weight: 700; line-height: 1.15; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray); }
@@ -710,6 +711,7 @@ a.contact-card:hover { border-color: var(--brand); }
 /* ---- Footer (dark) ---- */
 .site-footer { margin-top: 56px; background: #0c0c0e; color: #c7c9d1; }
 .site-footer__top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; padding: 56px 40px 40px; }
+.footer-lockup { display: block; width: 210px; height: auto; }
 .site-footer__brand p { color: #9a9ca6; max-width: 340px; margin: 16px 0 20px; font-size: 0.9rem; line-height: 1.6; }
 .foot-social { display: flex; gap: 12px; }
 .foot-social a { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.16); display: grid; place-items: center; color: #c7c9d1; transition: background .2s, color .2s, border-color .2s; }
@@ -1739,6 +1741,12 @@ a.contact-card:hover { border-color: var(--brand); }
 @media (max-width: 1080px) {
   .menu-toggle { display: inline-flex; }
   .site-header__actions { margin-left: auto; }
+}
+
+/* Phone: drop the tagline and tighten the lockup so the header bar still fits. */
+@media (max-width: 640px) {
+  .brand-tag { display: none; }
+  .header-lockup { width: 118px; }
 }
 
 /* ==========================================================================
