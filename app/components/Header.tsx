@@ -24,11 +24,11 @@ export function Header({
         <MenuToggle />
         <Link to="/" className="site-header__logo" aria-label="Ooge home">
           <img
-            src="/brand/ooge-innovations-lockup.svg"
-            alt="Ooge Innovations Private Limited"
-            width={150}
-            height={47}
-            className="header-lockup"
+            src="/ooge-logo.png"
+            alt="Ooge"
+            width={34}
+            height={34}
+            className="logo"
           />
           <span className="brand-tag">
             <span className="brand-tag__hl">Premium</span>

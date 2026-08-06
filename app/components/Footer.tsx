@@ -56,13 +56,7 @@ export function Footer({collections = []}: {collections?: MegaCollection[]}) {
     <footer className="site-footer">
       <div className="container site-footer__top">
         <div className="site-footer__brand">
-          <img
-            src="/brand/ooge-innovations-lockup-white.svg"
-            alt="Ooge Innovations Private Limited"
-            width={210}
-            height={66}
-            className="footer-lockup"
-          />
+          <img src="/ooge-logo.png" alt="Ooge" width={36} height={36} className="logo" />
           <p>
             Shop cables, chargers, speakers, earbuds, smartwatches, mics, projectors,
             lights and holders — quality electronics shipped direct to your door.
@@ -106,10 +100,7 @@ export function Footer({collections = []}: {collections?: MegaCollection[]}) {
       <div className="site-footer__bottom">
         <div className="container site-footer__bottombar">
           <div className="site-footer__legal">
-            <span>
-              © {new Date().getFullYear()} Ooge Innovations Private Limited. All rights
-              reserved.
-            </span>
+            <span>© {new Date().getFullYear()} Ooge Innovations. All rights reserved.</span>
             <nav className="site-footer__policies" aria-label="Legal">
               <Link to="/policies/privacy-policy">Privacy</Link>
               <Link to="/policies/terms-of-service">Terms</Link>
