@@ -54,7 +54,7 @@ export function ContactForm() {
         if (data?.fieldErrors) setErrors(data.fieldErrors);
         setSubmitError(
           data?.error ??
-            'Something went wrong. Please WhatsApp us on +91 73497 43401.',
+            'Something went wrong. Please WhatsApp us on +91 99005 42440.',
         );
         return;
       }
@@ -63,7 +63,7 @@ export function ContactForm() {
       setSent(true);
     } catch {
       setSubmitError(
-        'Network error — please WhatsApp us directly on +91 73497 43401.',
+        'Network error — please WhatsApp us directly on +91 99005 42440.',
       );
     } finally {
       setSending(false);

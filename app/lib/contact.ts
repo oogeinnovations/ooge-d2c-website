@@ -33,7 +33,7 @@ export const CONTACT_RULES: Record<string, Rule> = {
 
 /**
  * Reduce a user-typed phone number to the digits-only, country-code-prefixed
- * form WhatsApp expects (e.g. "+91 73497 43401" → "917349743401").
+ * form WhatsApp expects (e.g. "+91 99005 42440" → "919900542440").
  *
  * Returns null when the result can't be a real number, so the caller skips the
  * send rather than handing Netcore something it will reject.
