@@ -19,7 +19,7 @@ export default function ContactPage() {
             <p>
               Prefer to talk right away? Email{' '}
               <a href="mailto:sales@ooge.in">sales@ooge.in</a> or call{' '}
-              <a href="tel:+917349743401">+91 73497 43401</a>.
+              <a href="tel:+919900542440">+91 99005 42440</a>.
             </p>
           </div>
           <ContactForm />
@@ -32,9 +32,9 @@ export default function ContactPage() {
             <strong>Email</strong>
             <span>sales@ooge.in</span>
           </a>
-          <a className="contact-card" href="tel:+917349743401">
+          <a className="contact-card" href="tel:+919900542440">
             <strong>Phone / WhatsApp</strong>
-            <span>+91 73497 43401</span>
+            <span>+91 99005 42440</span>
           </a>
           <div className="contact-card">
             <strong>Hours</strong>
