@@ -6,14 +6,14 @@ What happens when a visitor submits the contact form on `/pages/contact`:
    `/api/contact`.
 2. `app/routes/api.contact.tsx` re-validates server-side, then:
    - sends the visitor a WhatsApp template message with the catalogue PDF
-     attached (`app/lib/whatsapp.ts`, via Netcore CPaaS), and
+     attached (`app/lib/whatsapp.ts`, via AiSensy), and
    - appends the lead to a Google Sheet (`app/lib/leads.ts`, via an Apps Script
      web app), recording whether the WhatsApp step succeeded.
 
 No email is sent. Enquiry mail is the corporate gifting form's job (Web3Forms);
 contact submissions are deliberately kept out of that inbox.
 
-Both steps degrade quietly: if the sheet or Netcore is misconfigured or down,
+Both steps degrade quietly: if the sheet or AiSensy is misconfigured or down,
 the visitor still sees a success message and the failure is written to the
 Oxygen logs with a `[contact]` prefix. Check those logs first when something
 looks wrong.
@@ -42,19 +42,19 @@ Limits worth knowing: WhatsApp caps documents at 100 MB, and the URL must be a
 direct link to the file — a Google Drive "share" link will not work, because it
 returns an HTML preview page rather than the PDF bytes.
 
-### 3. WhatsApp template (Netcore)
+### 3. WhatsApp template and campaign (AiSensy)
 
-You need an **approved** template with a **document header**. Create it under
-WhatsApp → Template Management in the Netcore dashboard, submit for approval,
-and wait for Meta to approve it. Then set `NETCORE_WA_TEMPLATE_NAME` and
-`NETCORE_WA_TEMPLATE_LANG` to match it exactly.
+You need an **approved** template with a **document header**. Create it in the
+AiSensy dashboard, wait for Meta to approve it, then create an **API Campaign**
+from it and set the campaign to **Live**. Set `AISENSY_CONTACT_CAMPAIGN_NAME` to
+the campaign's exact name, and `AISENSY_API_KEY` to your key (Manage → API Key).
 
 A template that suits this flow, with one body variable for the first name:
 
 > Hi {{1}}, thanks for reaching out to Ooge! Here's our latest product
 > catalogue. Our team will get back to you within one business day.
 
-If you change the number of body variables, update the parameter list in
+If you change the number of body variables, update `templateParams` in
 `app/lib/whatsapp.ts` to match — Meta rejects the send if the counts differ.
 
 Two rules that catch people out:
@@ -72,7 +72,7 @@ them into `.env` for local dev, and add them to the Oxygen environment for
 production (Shopify admin → Hydrogen → your storefront → Environments, or
 `npx shopify hydrogen env push`).
 
-Leaving `NETCORE_WA_TEMPLATE_NAME` or `CONTACT_CATALOGUE_PDF_URL` blank disables
+Leaving `AISENSY_CONTACT_CAMPAIGN_NAME` or `CONTACT_CATALOGUE_PDF_URL` blank disables
 the WhatsApp step cleanly: leads are still stored, and the confirmation message
 drops its mention of the catalogue.
 
@@ -85,5 +85,5 @@ Then check, in order:
 - the message with the PDF arrives
 - the dev server console has no `[contact]` errors
 
-If the ack column shows `failed: ...`, the detail there is Netcore's own error
-message — cross-reference it against Netcore's WhatsApp error codes.
+If the ack column shows `failed: ...`, the detail there is AiSensy's own error
+response — a Live campaign name that doesn't match exactly is the usual cause.

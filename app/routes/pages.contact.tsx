@@ -33,8 +33,12 @@ export default function ContactPage() {
             <span>sales@ooge.in</span>
           </a>
           <a className="contact-card" href="tel:+919900542440">
-            <strong>Phone / WhatsApp</strong>
+            <strong>Phone</strong>
             <span>+91 99005 42440</span>
+          </a>
+          <a className="contact-card" href="https://wa.me/917483830661" target="_blank" rel="noreferrer">
+            <strong>WhatsApp</strong>
+            <span>+91 74838 30661</span>
           </a>
           <div className="contact-card">
             <strong>Hours</strong>

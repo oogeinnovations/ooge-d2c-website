@@ -45,6 +45,7 @@ export function Header({
           <Link to="/pages/support">Support &amp; Warranty</Link>
           <Link to="/collections/all">Bestsellers</Link>
           <Link to="/pages/corporate-gifting">Corporate Gifting</Link>
+          <Link to="/pages/b2b-returns">B2B Returns</Link>
           <Link to="/pages/about">More</Link>
         </nav>
 
