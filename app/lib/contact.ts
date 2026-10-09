@@ -36,7 +36,7 @@ export const CONTACT_RULES: Record<string, Rule> = {
  * form WhatsApp expects (e.g. "+91 99005 42440" → "919900542440").
  *
  * Returns null when the result can't be a real number, so the caller skips the
- * send rather than handing Netcore something it will reject.
+ * send rather than handing AiSensy something it will reject.
  */
 export function toWhatsAppNumber(
   input: string,

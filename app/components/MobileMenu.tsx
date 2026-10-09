@@ -12,6 +12,7 @@ const NAV_LINKS = [
   {to: '/pages/support', label: 'Support & Warranty'},
   {to: '/collections/all', label: 'Bestsellers'},
   {to: '/pages/corporate-gifting', label: 'Corporate Gifting'},
+  {to: '/pages/b2b-returns', label: 'B2B Returns'},
   {to: '/pages/about', label: 'More'},
 ];
 

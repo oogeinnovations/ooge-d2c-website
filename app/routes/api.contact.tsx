@@ -55,7 +55,10 @@ export async function action({request, context}: Route.ActionArgs) {
 
   const {env} = context;
 
-  const ack = await sendCatalogueOnWhatsApp(env, {phone: values.phone});
+  const ack = await sendCatalogueOnWhatsApp(env, {
+    phone: values.phone,
+    name: values.name,
+  });
 
   const stored = await storeLead(env, {
     ...values,

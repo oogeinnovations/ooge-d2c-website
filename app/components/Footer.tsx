@@ -93,6 +93,7 @@ export function Footer({collections = []}: {collections?: MegaCollection[]}) {
           <Link to="/pages/support">Help center</Link>
           <Link to="/pages/support">Track order</Link>
           <Link to="/policies/shipping-policy">Shipping &amp; returns</Link>
+          <Link to="/pages/b2b-returns">B2B returns</Link>
           <Link to="/pages/support">Warranty</Link>
         </div>
       </div>

@@ -17,20 +17,22 @@ declare global {
     /** Shared secret matching the script's `SHARED_TOKEN` property. */
     CONTACT_SHEET_TOKEN?: string;
 
-    // ── Contact form: WhatsApp acknowledgement (Netcore CPaaS) ──────────────
-    /** Netcore WhatsApp API key, sent as a Bearer token. */
-    NETCORE_WA_API_KEY?: string;
-    /** Netcore "source" id (a UUID from the dashboard), sent with each message. */
-    NETCORE_WA_SOURCE_ID?: string;
-    /** Name of the APPROVED template that carries a document header. */
-    NETCORE_WA_TEMPLATE_NAME?: string;
-    /** Template language code, e.g. "en" or "en_US". Defaults to "en". */
-    NETCORE_WA_TEMPLATE_LANG?: string;
+    // ── Contact form: WhatsApp acknowledgement (AiSensy) ────────────────────
+    /** AiSensy API key (Dashboard → Manage → API Key). */
+    AISENSY_API_KEY?: string;
+    /** Name of the LIVE AiSensy API campaign whose template has a document header. */
+    AISENSY_CONTACT_CAMPAIGN_NAME?: string;
     /** Public HTTPS URL of the catalogue PDF sent as the document header. */
     CONTACT_CATALOGUE_PDF_URL?: string;
     /** Filename shown to the recipient in WhatsApp, e.g. "Ooge-Catalogue.pdf". */
     CONTACT_CATALOGUE_PDF_FILENAME?: string;
     /** Country code prefixed to local numbers. Defaults to "91" (India). */
     CONTACT_DEFAULT_COUNTRY_CODE?: string;
+
+    // ── B2B returns: request storage ────────────────────────────────────────
+    /** Apps Script /exec URL that appends return requests to the returns sheet. */
+    RETURNS_SHEET_WEBHOOK_URL?: string;
+    /** Shared secret matching that script's `SHARED_TOKEN` property. */
+    RETURNS_SHEET_TOKEN?: string;
   }
 }

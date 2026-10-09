@@ -1,4 +1,4 @@
-import type {MetaFunction} from 'react-router';
+import {Link, type MetaFunction} from 'react-router';
 import {WarrantyForm} from '~/components/WarrantyForm';
 import {Faq} from '~/components/Faq';
 
@@ -29,6 +29,16 @@ const TOPICS = [
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v4h4" />
+      </svg>
+    ),
+  },
+  {
+    title: 'B2B returns',
+    sub: 'Business customer? Request a return and we’ll send your delivery challan.',
+    to: '/pages/b2b-returns',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 8l9-5 9 5v8l-9 5-9-5z" /><path d="M3 8l9 5 9-5" /><path d="M12 13v8" />
       </svg>
     ),
   },
@@ -64,7 +74,7 @@ const TOPICS = [
 const SUPPORT_FAQS = [
   {q: 'How do I claim warranty?', a: 'Register your warranty below, then reach us with your order number and a short description of the issue. We’ll arrange a repair or replacement.'},
   {q: 'What does the warranty cover?', a: 'A 1-year warranty against manufacturing defects. It does not cover physical/water damage (beyond the rated IP level) or normal wear.'},
-  {q: 'How do I return an item?', a: 'Email us with your order number and a short description of the issue, and we’ll guide you through the process. The product must be unused and in its original packaging.'},
+  {q: 'How do I return an item?', a: 'Email us with your order number and a short description of the issue, and we’ll guide you through the process. The product must be unused and in its original packaging. Business customers can request a return on the B2B returns page.'},
   {q: 'When will my refund arrive?', a: 'Refunds are processed within 5–7 business days of the returned item passing inspection, to your original payment method.'},
   {q: 'Do you offer Cash on Delivery?', a: 'Yes, COD is available on most pincodes across India.'},
 ];
@@ -82,15 +92,26 @@ export default function SupportPage() {
 
       <section className="container section">
         <div className="help-grid">
-          {TOPICS.map((t) => (
-            <div key={t.title} className="help-card">
-              <span className="help-card__icon" aria-hidden>
-                {t.icon}
-              </span>
-              <strong>{t.title}</strong>
-              <span className="help-card__sub">{t.sub}</span>
-            </div>
-          ))}
+          {TOPICS.map((t) => {
+            const body = (
+              <>
+                <span className="help-card__icon" aria-hidden>
+                  {t.icon}
+                </span>
+                <strong>{t.title}</strong>
+                <span className="help-card__sub">{t.sub}</span>
+              </>
+            );
+            return t.to ? (
+              <Link key={t.title} to={t.to} className="help-card">
+                {body}
+              </Link>
+            ) : (
+              <div key={t.title} className="help-card">
+                {body}
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -121,8 +142,12 @@ export default function SupportPage() {
             <span>sales@ooge.in</span>
           </a>
           <a className="contact-card" href="tel:+919900542440">
-            <strong>Phone / WhatsApp</strong>
+            <strong>Phone</strong>
             <span>+91 99005 42440</span>
+          </a>
+          <a className="contact-card" href="https://wa.me/917483830661" target="_blank" rel="noreferrer">
+            <strong>WhatsApp</strong>
+            <span>+91 74838 30661</span>
           </a>
           <div className="contact-card">
             <strong>Hours</strong>
