@@ -15,6 +15,7 @@ export type StoredReturn = {
   orderId: string;
   pickupAddress: string;
   pincode: string;
+  reason: string;
   items: {name: string; qty: number}[];
 };
 

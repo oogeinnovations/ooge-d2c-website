@@ -227,6 +227,18 @@ export function B2BReturnForm() {
       </fieldset>
 
       <label>
+        Reason for return
+        <textarea
+          rows={2}
+          placeholder="e.g. Item not working, wrong colour received"
+          className={errors.reason ? 'is-invalid' : undefined}
+          value={form.reason}
+          onChange={update('reason')}
+        />
+        {err('reason')}
+      </label>
+
+      <label>
         Pickup address
         <textarea
           rows={3}

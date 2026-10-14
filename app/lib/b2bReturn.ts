@@ -12,6 +12,7 @@ export type B2BReturnValues = {
   orderId: string;
   pickupAddress: string;
   pincode: string;
+  reason: string;
   items: ReturnItem[];
 };
 
@@ -24,6 +25,7 @@ export const EMPTY_RETURN: B2BReturnValues = {
   orderId: '',
   pickupAddress: '',
   pincode: '',
+  reason: '',
   items: [{name: '', qty: '1'}],
 };
 
@@ -52,6 +54,7 @@ export const RETURN_RULES: Record<string, Rule> = {
     pattern: /^[0-9]{6}$/,
     message: 'Enter a 6-digit pincode',
   },
+  reason: {label: 'Reason for return', required: true},
 };
 
 /**
