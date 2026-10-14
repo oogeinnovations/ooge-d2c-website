@@ -80,6 +80,7 @@ var HEADERS = [
   'Items',
   'Pickup address',
   'Pincode',
+  'Return reason',
   'AWB',
   'DC no.',
   'DC link',
@@ -111,6 +112,7 @@ function doPost(e) {
     lock.waitLock(20000);
     try {
       var sheet = getSheet_();
+      ensureHeaders_(sheet);
       appendByHeader_(sheet, {
         'Submitted at': r.submittedAt || new Date().toISOString(),
         'Return ID': r.returnId || '',
@@ -127,6 +129,7 @@ function doPost(e) {
           .join('\n'),
         'Pickup address': r.pickupAddress || '',
         Pincode: "'" + (r.pincode || ''),
+        'Return reason': r.reason || '',
         'Items (JSON)': JSON.stringify(items),
       });
     } finally {
@@ -330,7 +333,10 @@ function dcHtml_(ctx, dcNo) {
     '<td><b>DC No:</b> ' + esc_(dcNo) + '<br><b>Date:</b> ' + today + '</td>' +
     '<td><b>Return ID:</b> ' + esc_(ctx.get('Return ID')) +
     '<br><b>Order ID:</b> ' + esc_(ctx.get('Order ID')) +
-    (awb ? '<br><b>AWB:</b> ' + esc_(awb) : '') + '</td>' +
+    (awb ? '<br><b>AWB:</b> ' + esc_(awb) : '') +
+    (ctx.get('Return reason')
+      ? '<br><b>Reason:</b> ' + esc_(ctx.get('Return reason'))
+      : '') + '</td>' +
     '</tr></table><div class="sp"></div>' +
     '<table><tr><th width="50%">PICKUP FROM (Sender)</th>' +
     '<th width="50%">DELIVER TO (Receiver)</th></tr>' +
@@ -441,6 +447,21 @@ function getSheet_() {
       );
   }
   return sheet;
+}
+
+/**
+ * Add any header from HEADERS that an older sheet doesn't have yet, at the end,
+ * so adding a field never needs a manual edit (and never shifts existing data).
+ */
+function ensureHeaders_(sheet) {
+  var have = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  HEADERS.forEach(function (h) {
+    if (have.indexOf(h) === -1) {
+      var col = sheet.getLastColumn() + 1;
+      sheet.getRange(1, col).setValue(h).setFontWeight('bold');
+      have.push(h);
+    }
+  });
 }
 
 /** Append a row, placing each value under its header so column order is free. */

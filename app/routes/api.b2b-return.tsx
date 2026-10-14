@@ -34,6 +34,7 @@ export async function action({request, context}: Route.ActionArgs) {
     orderId: clean(raw.orderId, 60),
     pickupAddress: clean(raw.pickupAddress, 500),
     pincode: clean(raw.pincode, 6),
+    reason: clean(raw.reason, 500),
   };
   const items = (Array.isArray(raw.items) ? raw.items : [])
     .slice(0, MAX_ITEMS + 1)
