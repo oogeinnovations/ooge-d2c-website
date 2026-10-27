@@ -169,7 +169,7 @@ function onOpen() {
     .addItem('Regenerate DC PDF only (selected row)', 'regenerateSelected')
     .addItem('Mark rejected (selected row)', 'rejectSelected')
     .addSeparator()
-    .addItem('Clean up old columns (one time)', 'cleanupOldColumns')
+    .addItem('Delete old columns (one time)', 'cleanupOldColumns')
     .addToUi();
 }
 
@@ -266,9 +266,9 @@ function setupTrigger() {
 }
 
 /**
- * Columns from earlier versions of this sheet. They are no longer used, so the
- * menu item below removes them once -- but only the ones that hold no data, so
- * nothing is ever lost.
+ * Columns from earlier versions of this sheet. None of them is used any more, so
+ * the menu item below deletes them in one go. The confirmation box says which
+ * ones still hold data, so nothing is removed without you seeing it first.
  */
 var OLD_COLUMNS = ['Order ID', 'Items (JSON)', 'Item name', 'Quantity', 'Reason', 'Approve item'];
 
@@ -277,8 +277,7 @@ function cleanupOldColumns() {
   var sheet = getSheet_();
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   var rows = Math.max(sheet.getLastRow() - 1, 0);
-  var remove = [];
-  var kept = [];
+  var found = [];
   OLD_COLUMNS.forEach(function (h) {
     var col = headers.indexOf(h) + 1;
     if (!col) return;
@@ -287,34 +286,29 @@ function cleanupOldColumns() {
       sheet.getRange(2, col, rows, 1).getValues().some(function (r) {
         return r[0] !== '' && r[0] !== null;
       });
-    (hasData ? kept : remove).push({name: h, col: col});
+    found.push({name: h, col: col, hasData: hasData});
   });
-  if (remove.length === 0 && kept.length === 0) {
+  if (found.length === 0) {
     ui.alert('Nothing to clean up: the old columns are already gone.');
     return;
   }
+  var withData = found.filter(function (c) { return c.hasData; });
   var msg =
-    remove.length > 0
-      ? 'These empty old columns will be deleted:\n\n' +
-        remove.map(function (c) { return '  - ' + c.name; }).join('\n')
-      : 'No empty old columns to delete.';
-  if (kept.length > 0) {
-    msg +=
-      '\n\nThese still hold data from older returns, so they are being kept:\n\n' +
-      kept.map(function (c) { return '  - ' + c.name; }).join('\n');
+    'These old columns will be deleted:\n\n' +
+    found
+      .map(function (c) { return '  - ' + c.name + (c.hasData ? '   (has old data)' : ''); })
+      .join('\n');
+  if (withData.length > 0) {
+    msg += '\n\nThe ones marked "has old data" hold values from returns made before the current layout.';
   }
-  if (remove.length === 0) {
-    ui.alert(msg);
-    return;
-  }
-  if (ui.alert('Clean up old columns', msg + '\n\nContinue?', ui.ButtonSet.YES_NO) !== ui.Button.YES) {
+  if (ui.alert('Delete old columns', msg + '\n\nContinue?', ui.ButtonSet.YES_NO) !== ui.Button.YES) {
     return;
   }
   // Right to left, so earlier column numbers stay valid while deleting.
-  remove
+  found
     .sort(function (a, b) { return b.col - a.col; })
     .forEach(function (c) { sheet.deleteColumn(c.col); });
-  ui.alert('Done. Removed ' + remove.length + ' old column(s).');
+  ui.alert('Done. Deleted ' + found.length + ' old column(s).');
 }
 
 /** One "name - Qty 2 - reason" line per item; approvedOnly keeps ticked items. */
