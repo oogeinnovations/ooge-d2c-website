@@ -12,11 +12,11 @@ export default function B2BReturnsPage() {
       <section className="contact-top">
         <div className="container contact-top__grid">
           <div className="contact-top__text">
-            <span className="contact-top__eyebrow">For business customers</span>
             <h1>B2B returns</h1>
             <p>
-              Need to return items from a business order? Fill in the details
-              and our team will review your request.
+              Returns are accepted from <strong>authorised stockists and
+              distributors only</strong>. Fill in the details and our team will
+              review your request.
             </p>
             <p>
               Once approved, we arrange the pickup and send a{' '}

@@ -6,6 +6,7 @@ import {validate, type Errors} from '~/lib/validation';
 import {
   EMPTY_RETURN,
   MAX_ITEMS,
+  RETURN_REASONS,
   RETURN_RULES,
   validateItems,
   type B2BReturnValues,
@@ -30,7 +31,11 @@ export function B2BReturnForm() {
       clearError(key);
     };
 
-  const updateItem = (i: number, key: 'name' | 'qty', value: string) => {
+  const updateItem = (
+    i: number,
+    key: 'name' | 'qty' | 'reason' | 'note',
+    value: string,
+  ) => {
     setForm((f) => ({
       ...f,
       items: f.items.map((item, idx) =>
@@ -44,7 +49,7 @@ export function B2BReturnForm() {
     setForm((f) =>
       f.items.length >= MAX_ITEMS
         ? f
-        : {...f, items: [...f.items, {name: '', qty: '1'}]},
+        : {...f, items: [...f.items, {name: '', qty: '1', reason: '', note: ''}]},
     );
 
   const removeItem = (i: number) => {
@@ -169,16 +174,6 @@ export function B2BReturnForm() {
           {err('whatsapp')}
         </label>
       </div>
-      <label>
-        Order ID
-        <input
-          className={field('orderId')}
-          value={form.orderId}
-          onChange={update('orderId')}
-        />
-        {err('orderId')}
-      </label>
-
       <fieldset className="b2b-items">
         <legend>Items to return</legend>
         {form.items.map((item, i) => (
@@ -206,6 +201,39 @@ export function B2BReturnForm() {
               />
               {err(`item-${i}-qty`)}
             </label>
+            <label className="b2b-items__reason">
+              {i === 0 && 'Reason for returning this item'}
+              <select
+                aria-label={`Item ${i + 1} reason`}
+                className={
+                  errors[`item-${i}-reason`] ? 'is-invalid' : undefined
+                }
+                value={item.reason}
+                onChange={(e) => updateItem(i, 'reason', e.target.value)}
+              >
+                <option value="">Select a reason</option>
+                {RETURN_REASONS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+              {err(`item-${i}-reason`)}
+            </label>
+            {item.reason === 'Other' && (
+              <label className="b2b-items__reason">
+                <input
+                  aria-label={`Item ${i + 1} reason details`}
+                  placeholder="Describe the reason"
+                  className={
+                    errors[`item-${i}-note`] ? 'is-invalid' : undefined
+                  }
+                  value={item.note}
+                  onChange={(e) => updateItem(i, 'note', e.target.value)}
+                />
+                {err(`item-${i}-note`)}
+              </label>
+            )}
             {form.items.length > 1 && (
               <button
                 type="button"
@@ -225,18 +253,6 @@ export function B2BReturnForm() {
           </button>
         )}
       </fieldset>
-
-      <label>
-        Reason for return
-        <textarea
-          rows={2}
-          placeholder="e.g. Item not working, wrong colour received"
-          className={errors.reason ? 'is-invalid' : undefined}
-          value={form.reason}
-          onChange={update('reason')}
-        />
-        {err('reason')}
-      </label>
 
       <label>
         Pickup address
@@ -269,6 +285,7 @@ export function B2BReturnForm() {
         {sending ? 'Submitting…' : 'Submit return request'}
       </button>
       <p className="corp-form__note">
+        Returns are accepted from authorised stockists and distributors only.
         Submitting a request doesn&rsquo;t guarantee approval — we&rsquo;ll
         confirm on WhatsApp.
       </p>

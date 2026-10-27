@@ -12,11 +12,9 @@ export type StoredReturn = {
   company: string;
   phone: string;
   whatsapp: string;
-  orderId: string;
   pickupAddress: string;
   pincode: string;
-  reason: string;
-  items: {name: string; qty: number}[];
+  items: {name: string; qty: number; reason: string}[];
 };
 
 export type StoreReturnResult =

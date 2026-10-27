@@ -76,11 +76,9 @@ var HEADERS = [
   'Company',
   'Phone',
   'WhatsApp number',
-  'Order ID',
   'Items',
   'Pickup address',
   'Pincode',
-  'Return reason',
   'AWB',
   'DC no.',
   'DC link',
@@ -121,15 +119,13 @@ function doPost(e) {
         // Leading apostrophe keeps "+91..." as text rather than a formula.
         Phone: "'" + (r.phone || ''),
         'WhatsApp number': "'" + (r.whatsapp || ''),
-        'Order ID': "'" + (r.orderId || ''),
         Items: items
           .map(function (i) {
-            return i.name + ' x ' + i.qty;
+            return i.name + ' x ' + i.qty + (i.reason ? ' - ' + i.reason : '');
           })
           .join('\n'),
         'Pickup address': r.pickupAddress || '',
         Pincode: "'" + (r.pincode || ''),
-        'Return reason': r.reason || '',
         'Items (JSON)': JSON.stringify(items),
       });
     } finally {
@@ -290,6 +286,7 @@ function dcHtml_(ctx, dcNo) {
     .map(function (it, i) {
       return (
         '<tr><td class="c">' + (i + 1) + '</td><td>' + esc_(it.name) +
+        '</td><td>' + esc_(it.reason) +
         '</td><td class="c">' + esc_(it.qty) + '</td></tr>'
       );
     })
@@ -332,19 +329,16 @@ function dcHtml_(ctx, dcNo) {
     '<table><tr>' +
     '<td><b>DC No:</b> ' + esc_(dcNo) + '<br><b>Date:</b> ' + today + '</td>' +
     '<td><b>Return ID:</b> ' + esc_(ctx.get('Return ID')) +
-    '<br><b>Order ID:</b> ' + esc_(ctx.get('Order ID')) +
     (awb ? '<br><b>AWB:</b> ' + esc_(awb) : '') +
-    (ctx.get('Return reason')
-      ? '<br><b>Reason:</b> ' + esc_(ctx.get('Return reason'))
-      : '') + '</td>' +
+    '</td>' +
     '</tr></table><div class="sp"></div>' +
     '<table><tr><th width="50%">PICKUP FROM (Sender)</th>' +
     '<th width="50%">DELIVER TO (Receiver)</th></tr>' +
     '<tr><td>' + sender + '</td><td>' + receiver + '</td></tr></table>' +
     '<div class="sp"></div>' +
     '<table><tr><th class="c">S.No</th><th>Item description</th>' +
-    '<th class="c">Qty</th></tr>' + rows +
-    '<tr><td></td><td align="right"><b>Total quantity</b></td>' +
+    '<th>Reason for return</th><th class="c">Qty</th></tr>' + rows +
+    '<tr><td></td><td></td><td align="right"><b>Total quantity</b></td>' +
     '<td class="c"><b>' + total + '</b></td></tr></table>' +
     '<div class="sp"></div>' +
     '<p>Goods are being returned to the supplier against the above order. ' +

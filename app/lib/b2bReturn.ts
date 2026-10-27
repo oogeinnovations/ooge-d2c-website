@@ -3,16 +3,31 @@
 // of server-only code — it ends up in the client bundle.
 import type {Rule} from '~/lib/validation';
 
-export type ReturnItem = {name: string; qty: string};
+/** Fixed list so the sheet stays filterable; "Other" asks for a short note. */
+export const RETURN_REASONS = [
+  'Defective / not working',
+  'Damaged in transit',
+  'Wrong item received',
+  'Quantity mismatch',
+  'Not as described',
+  'No longer needed',
+  'Other',
+] as const;
+
+export type ReturnItem = {
+  name: string;
+  qty: string;
+  reason: string;
+  /** Only used when reason is "Other". */
+  note: string;
+};
 
 export type B2BReturnValues = {
   company: string;
   phone: string;
   whatsapp: string;
-  orderId: string;
   pickupAddress: string;
   pincode: string;
-  reason: string;
   items: ReturnItem[];
 };
 
@@ -22,11 +37,9 @@ export const EMPTY_RETURN: B2BReturnValues = {
   company: '',
   phone: '',
   whatsapp: '',
-  orderId: '',
   pickupAddress: '',
   pincode: '',
-  reason: '',
-  items: [{name: '', qty: '1'}],
+  items: [{name: '', qty: '1', reason: '', note: ''}],
 };
 
 const PHONE = /^[0-9+\-\s]{7,15}$/;
@@ -46,7 +59,6 @@ export const RETURN_RULES: Record<string, Rule> = {
     pattern: PHONE,
     message: 'Enter a valid WhatsApp number',
   },
-  orderId: {label: 'Order ID', required: true},
   pickupAddress: {label: 'Pickup address', required: true},
   pincode: {
     label: 'Pincode',
@@ -54,8 +66,12 @@ export const RETURN_RULES: Record<string, Rule> = {
     pattern: /^[0-9]{6}$/,
     message: 'Enter a 6-digit pincode',
   },
-  reason: {label: 'Reason for return', required: true},
 };
+
+/** The single string stored for an item, e.g. "Other: box was crushed". */
+export function reasonText(item: {reason: string; note: string}): string {
+  return item.reason === 'Other' ? `Other: ${item.note.trim()}` : item.reason;
+}
 
 /**
  * Validate the item rows. Errors are keyed `item-<index>-name` / `-qty` so the
@@ -67,6 +83,11 @@ export function validateItems(items: ReturnItem[]): Record<string, string> {
   if (items.length > MAX_ITEMS) errors.items = `Up to ${MAX_ITEMS} items`;
   items.forEach((item, i) => {
     if (!item.name.trim()) errors[`item-${i}-name`] = 'Item name is required';
+    if (!(RETURN_REASONS as readonly string[]).includes(item.reason)) {
+      errors[`item-${i}-reason`] = 'Choose a reason for this item';
+    } else if (item.reason === 'Other' && !item.note.trim()) {
+      errors[`item-${i}-note`] = 'Please describe the reason';
+    }
     const qty = Number(item.qty);
     if (!Number.isInteger(qty) || qty < 1 || qty > 9999) {
       errors[`item-${i}-qty`] = 'Enter a quantity of 1 or more';
