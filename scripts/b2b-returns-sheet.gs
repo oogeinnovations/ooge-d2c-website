@@ -76,15 +76,27 @@ var HEADERS = [
   'Company',
   'Phone',
   'WhatsApp number',
-  'Items',
   'Pickup address',
   'Pincode',
+  'Items',
+  'Approved items',
   'AWB',
   'DC no.',
   'DC link',
   'DC WhatsApp',
-  'Items (JSON)',
+  'Items data',
 ];
+
+// 'Items data' holds the structured item list (name, qty, reason, approved) the
+// script works from. It is hidden; the readable lists are 'Items' and
+// 'Approved items'.
+var DATA_HEADER = 'Items data';
+
+// One row per RETURN. The 'Items' cell lists every item (name - Qty - reason).
+// To choose which items you are taking back, open Ooge Returns > Open items panel:
+// a side panel follows the selected row and shows its items with checkboxes
+// (all ticked by default). The DC lists only the ticked items. 'Approved items'
+// shows the result.
 
 // -- Storefront endpoint -----------------------------------------------------
 
@@ -111,6 +123,15 @@ function doPost(e) {
     try {
       var sheet = getSheet_();
       ensureHeaders_(sheet);
+      applyDropdowns_(sheet);
+      var stored = items.map(function (i) {
+        return {
+          name: i.name || '',
+          qty: Number(i.qty) || 0,
+          reason: i.reason || '',
+          approved: true,
+        };
+      });
       appendByHeader_(sheet, {
         'Submitted at': r.submittedAt || new Date().toISOString(),
         'Return ID': r.returnId || '',
@@ -119,14 +140,11 @@ function doPost(e) {
         // Leading apostrophe keeps "+91..." as text rather than a formula.
         Phone: "'" + (r.phone || ''),
         'WhatsApp number': "'" + (r.whatsapp || ''),
-        Items: items
-          .map(function (i) {
-            return i.name + ' x ' + i.qty + (i.reason ? ' - ' + i.reason : '');
-          })
-          .join('\n'),
         'Pickup address': r.pickupAddress || '',
         Pincode: "'" + (r.pincode || ''),
-        'Items (JSON)': JSON.stringify(items),
+        Items: itemLines_(stored, false),
+        'Approved items': 'All items',
+        'Items data': JSON.stringify(stored),
       });
     } finally {
       lock.releaseLock();
@@ -146,9 +164,12 @@ function doGet() {
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Ooge Returns')
+    .addItem('Open items panel (tick items, accept)', 'openPanel')
     .addItem('Accept & send DC (selected row)', 'acceptSelected')
     .addItem('Regenerate DC PDF only (selected row)', 'regenerateSelected')
     .addItem('Mark rejected (selected row)', 'rejectSelected')
+    .addSeparator()
+    .addItem('Delete old columns (one time)', 'cleanupOldColumns')
     .addToUi();
 }
 
@@ -168,7 +189,13 @@ function acceptSelected() {
     if (again !== ui.Button.YES) return;
   }
 
-  var done = acceptRow_(ctx);
+  var done;
+  try {
+    done = acceptRow_(ctx);
+  } catch (err) {
+    ui.alert(String(err.message || err));
+    return;
+  }
   var dc = done.dc;
   var result = done.result;
 
@@ -180,8 +207,17 @@ function acceptSelected() {
   );
 }
 
+function hasApprovedItems_(ctx) {
+  return ctx.items.some(function (it) {
+    return it.approved !== false;
+  });
+}
+
 /** Generate the DC, mark the row Accepted, and WhatsApp it. No UI. */
 function acceptRow_(ctx) {
+  if (!hasApprovedItems_(ctx)) {
+    throw new Error('No items are approved. Tick at least one item in the panel (Ooge Returns > Open items panel).');
+  }
   var dc = generateDc_(ctx);
   ctx.set('Status', 'Accepted');
   ctx.set('DC no.', dc.dcNo);
@@ -214,7 +250,8 @@ function onStatusEdit(e) {
   try {
     acceptRow_(ctx);
   } catch (err) {
-    ctx.set('DC WhatsApp', 'error: ' + err);
+    ctx.set('Status', 'Pending');
+    ctx.set('DC WhatsApp', 'error: ' + (err.message || err));
   }
 }
 
@@ -226,6 +263,196 @@ function setupTrigger() {
     if (t.getHandlerFunction() === 'onStatusEdit') ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger('onStatusEdit').forSpreadsheet(ss).onEdit().create();
+}
+
+/**
+ * Columns from earlier versions of this sheet. None of them is used any more, so
+ * the menu item below deletes them in one go. The confirmation box says which
+ * ones still hold data, so nothing is removed without you seeing it first.
+ */
+var OLD_COLUMNS = ['Order ID', 'Items (JSON)', 'Item name', 'Quantity', 'Reason', 'Approve item'];
+
+function cleanupOldColumns() {
+  var ui = SpreadsheetApp.getUi();
+  var sheet = getSheet_();
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var rows = Math.max(sheet.getLastRow() - 1, 0);
+  var found = [];
+  OLD_COLUMNS.forEach(function (h) {
+    var col = headers.indexOf(h) + 1;
+    if (!col) return;
+    var hasData =
+      rows > 0 &&
+      sheet.getRange(2, col, rows, 1).getValues().some(function (r) {
+        return r[0] !== '' && r[0] !== null;
+      });
+    found.push({name: h, col: col, hasData: hasData});
+  });
+  if (found.length === 0) {
+    ui.alert('Nothing to clean up: the old columns are already gone.');
+    return;
+  }
+  var withData = found.filter(function (c) { return c.hasData; });
+  var msg =
+    'These old columns will be deleted:\n\n' +
+    found
+      .map(function (c) { return '  - ' + c.name + (c.hasData ? '   (has old data)' : ''); })
+      .join('\n');
+  if (withData.length > 0) {
+    msg += '\n\nThe ones marked "has old data" hold values from returns made before the current layout.';
+  }
+  if (ui.alert('Delete old columns', msg + '\n\nContinue?', ui.ButtonSet.YES_NO) !== ui.Button.YES) {
+    return;
+  }
+  // Right to left, so earlier column numbers stay valid while deleting.
+  found
+    .sort(function (a, b) { return b.col - a.col; })
+    .forEach(function (c) { sheet.deleteColumn(c.col); });
+  ui.alert('Done. Deleted ' + found.length + ' old column(s).');
+}
+
+/** One "name - Qty 2 - reason" line per item; approvedOnly keeps ticked items. */
+function itemLines_(items, approvedOnly) {
+  return items
+    .filter(function (it) {
+      return !approvedOnly || it.approved !== false;
+    })
+    .map(function (it) {
+      return it.name + ' - Qty ' + it.qty + (it.reason ? ' - ' + it.reason : '');
+    })
+    .join('\n');
+}
+
+// -- Items panel ---------------------------------------------------------------
+// A sidebar that follows the selected row: it lists that return's items with
+// real checkboxes (ticking saves at once) and has the Accept button. Sheets
+// cannot hold several checkboxes in one cell, so they live here instead.
+
+function openPanel() {
+  SpreadsheetApp.getUi().showSidebar(
+    HtmlService.createHtmlOutput(panelHtml_()).setTitle('Return items'),
+  );
+}
+
+/** What the panel shows for the currently selected row. */
+function getPanelState() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  if (sheet.getName() !== SHEET_NAME) {
+    return {none: true, message: 'Open the "' + SHEET_NAME + '" sheet and click a return.'};
+  }
+  var range = sheet.getActiveRange();
+  var row = range ? range.getRow() : 0;
+  if (row < 2) return {none: true, message: 'Click a return row to see its items.'};
+  var ctx = rowContext_(sheet, row);
+  if (!ctx) return {none: true, message: 'That row has no return. Click a row with a Return ID.'};
+  return {
+    row: row,
+    returnId: ctx.get('Return ID'),
+    company: ctx.get('Company'),
+    status: ctx.get('Status'),
+    dcNo: ctx.get('DC no.'),
+    items: ctx.items,
+  };
+}
+
+/** From the panel: store which items are ticked for this return. */
+function saveItemSelection(row, returnId, selected) {
+  var sheet = getSheet_();
+  ensureHeaders_(sheet);
+  var ctx = rowContext_(sheet, row);
+  if (!ctx || ctx.get('Return ID') !== returnId) {
+    throw new Error('That row changed. Click the return again.');
+  }
+  var items = ctx.items;
+  items.forEach(function (it, i) {
+    it.approved = selected.indexOf(i) !== -1;
+  });
+  ctx.set(DATA_HEADER, JSON.stringify(items));
+  var all = items.every(function (it) {
+    return it.approved;
+  });
+  ctx.set('Approved items', all ? 'All items' : itemLines_(items, true) || 'None');
+  return items.filter(function (it) { return it.approved; }).length;
+}
+
+/** From the panel: accept the return (DC for the ticked items, sent on WhatsApp). */
+function acceptFromPanel(row, returnId, force) {
+  try {
+    var sheet = getSheet_();
+    var ctx = rowContext_(sheet, row);
+    if (!ctx || ctx.get('Return ID') !== returnId) {
+      return {ok: false, text: 'That row changed. Click the return again.'};
+    }
+    if (ctx.get('DC no.') && !force) {
+      return {ok: false, confirm: true, text: ctx.get('DC no.') + ' already exists for this return.'};
+    }
+    var done = acceptRow_(ctx);
+    return {
+      ok: done.result.ok,
+      text: done.result.ok
+        ? 'DC ' + done.dc.dcNo + ' made and sent on WhatsApp.'
+        : 'DC ' + done.dc.dcNo + ' made, but WhatsApp failed: ' + done.result.detail +
+          ' Download it from the DC link column and send it yourself.',
+    };
+  } catch (err) {
+    return {ok: false, text: String(err.message || err)};
+  }
+}
+
+function panelHtml_() {
+  return (
+    '<html><head><base target="_top"><style>' +
+    'body{font-family:Arial,sans-serif;font-size:13px;margin:0;padding:14px;color:#111}' +
+    'h3{margin:0 0 2px;font-size:15px}.sub{color:#666;margin-bottom:12px}' +
+    '.it{display:flex;gap:10px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid #e3e3e3;cursor:pointer}' +
+    '.it input{margin-top:2px;transform:scale(1.25)}.it small{color:#666}' +
+    '#count{margin:12px 0 6px;font-weight:bold}' +
+    'button{width:100%;margin-top:8px;padding:10px;font-size:14px;background:#1a73e8;color:#fff;border:0;border-radius:4px;cursor:pointer}' +
+    'button:disabled{background:#9bbcf0;cursor:default}' +
+    '#msg{margin-top:10px;padding:8px;border-radius:4px;display:none}' +
+    '.ok{background:#e6f4ea}.bad{background:#fde7e9}.note{color:#666;font-size:12px;margin-top:12px}' +
+    '</style></head><body>' +
+    '<div id="empty" class="sub">Loading...</div>' +
+    '<div id="main" style="display:none">' +
+    '<h3 id="title"></h3><div class="sub" id="sub"></div>' +
+    '<div id="list"></div><div id="count"></div>' +
+    '<button id="accept" onclick="accept(false)">Accept &amp; send DC</button>' +
+    '<div id="msg"></div>' +
+    '<div class="note">Untick any item you are not taking back. The DC lists only the ticked items.</div>' +
+    '</div><script>' +
+    'var cur=null,key="";' +
+    'function $(i){return document.getElementById(i)}' +
+    'function show(m,c){var e=$("msg");e.textContent=m;e.className=c;e.style.display="block"}' +
+    'function render(st){' +
+    ' if(st.none){$("main").style.display="none";$("empty").style.display="block";$("empty").textContent=st.message;cur=null;key="";return}' +
+    ' var k=st.row+"|"+st.returnId+"|"+JSON.stringify(st.items)+"|"+st.status+"|"+st.dcNo;' +
+    ' if(k===key)return; key=k; cur=st;' +
+    ' $("empty").style.display="none";$("main").style.display="block";$("msg").style.display="none";' +
+    ' $("title").textContent=st.returnId;' +
+    ' $("sub").textContent=st.company+" - "+st.status+(st.dcNo?" - "+st.dcNo:"");' +
+    ' var l=$("list");l.textContent="";' +
+    ' st.items.forEach(function(it,i){' +
+    '  var lab=document.createElement("label");lab.className="it";' +
+    '  var cb=document.createElement("input");cb.type="checkbox";cb.checked=it.approved!==false;cb.onchange=function(){save()};' +
+    '  var sp=document.createElement("span");var b=document.createElement("b");b.textContent=it.name+"  x"+it.qty;' +
+    '  var sm=document.createElement("small");sm.textContent=it.reason||"";' +
+    '  sp.appendChild(b);sp.appendChild(document.createElement("br"));sp.appendChild(sm);' +
+    '  lab.appendChild(cb);lab.appendChild(sp);l.appendChild(lab)});' +
+    ' count()}' +
+    'function ticked(){return [].map.call(document.querySelectorAll("#list input"),function(x,i){return x.checked?i:-1}).filter(function(i){return i>=0})}' +
+    'function count(){var n=ticked().length;$("count").textContent=n+" of "+cur.items.length+" items approved";$("accept").disabled=n===0}' +
+    'function save(){count();var st=cur;google.script.run.withFailureHandler(function(e){show(e.message||e,"bad")})' +
+    ' .saveItemSelection(st.row,st.returnId,ticked())}' +
+    'function accept(force){var st=cur;$("accept").disabled=true;show("Working...","ok");' +
+    ' google.script.run.withSuccessHandler(function(r){' +
+    '  if(r.confirm){if(confirm(r.text+" Make a NEW DC and send it again?"))return accept(true);$("msg").style.display="none";count();return}' +
+    '  show(r.text,r.ok?"ok":"bad");key="";count()})' +
+    ' .withFailureHandler(function(e){show(e.message||e,"bad");count()})' +
+    ' .acceptFromPanel(st.row,st.returnId,!!force)}' +
+    'function poll(){google.script.run.withSuccessHandler(render).getPanelState()}' +
+    'poll();setInterval(poll,1500);' +
+    '</script></body></html>'
+  );
 }
 
 /** Rebuild the PDF (e.g. after adding an AWB) without messaging the customer. */
@@ -277,10 +504,9 @@ function nextDcNo_() {
 
 function dcHtml_(ctx, dcNo) {
   var p = PropertiesService.getScriptProperties();
-  var items = [];
-  try {
-    items = JSON.parse(ctx.get('Items (JSON)') || '[]');
-  } catch (e) {}
+  var items = ctx.items.filter(function (it) {
+    return it.approved !== false;
+  });
 
   var rows = items
     .map(function (it, i) {
@@ -431,14 +657,7 @@ function getSheet_() {
     sheet.appendRow(HEADERS);
     sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
     sheet.setFrozenRows(1);
-    // Status dropdown for the whole column, so edits stay consistent.
-    sheet
-      .getRange(2, HEADERS.indexOf('Status') + 1, 998, 1)
-      .setDataValidation(
-        SpreadsheetApp.newDataValidation()
-          .requireValueInList(['Pending', 'Accepted', 'Rejected', 'Picked up', 'Received'], true)
-          .build(),
-      );
+    sheet.hideColumns(HEADERS.indexOf(DATA_HEADER) + 1);
   }
   return sheet;
 }
@@ -453,8 +672,26 @@ function ensureHeaders_(sheet) {
     if (have.indexOf(h) === -1) {
       var col = sheet.getLastColumn() + 1;
       sheet.getRange(1, col).setValue(h).setFontWeight('bold');
+      if (h === DATA_HEADER) sheet.hideColumns(col);
       have.push(h);
     }
+  });
+}
+
+/** The Status dropdown, down its whole column. */
+function applyDropdowns_(sheet) {
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var lists = {
+    Status: ['Pending', 'Accepted', 'Rejected', 'Picked up', 'Received'],
+  };
+  Object.keys(lists).forEach(function (h) {
+    var col = headers.indexOf(h) + 1;
+    if (!col) return;
+    sheet
+      .getRange(2, col, 998, 1)
+      .setDataValidation(
+        SpreadsheetApp.newDataValidation().requireValueInList(lists[h], true).build(),
+      );
   });
 }
 
@@ -484,7 +721,11 @@ function selectedReturn_(ui) {
   return ctx;
 }
 
-/** {get,set} accessors for one data row, keyed by header. Null if no Return ID. */
+/**
+ * {get,set,items} for one data row, keyed by header. Items come from the hidden
+ * 'Items data' JSON ([{name, qty, reason, approved}]); returns made before that
+ * column existed fall back to their old 'Items (JSON)'. Null if no Return ID.
+ */
 function rowContext_(sheet, row) {
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   var values = sheet.getRange(row, 1, 1, headers.length).getValues()[0];
@@ -496,15 +737,26 @@ function rowContext_(sheet, row) {
     if (cols[h] === undefined) throw new Error('Missing column: ' + h);
   });
   if (!values[cols['Return ID']]) return null;
-  return {
+
+  var ctx = {
     get: function (h) {
       return String(values[cols[h]] === undefined ? '' : values[cols[h]]).replace(/^'/, '');
     },
     set: function (h, v) {
+      if (cols[h] === undefined) return;
       sheet.getRange(row, cols[h] + 1).setValue(v);
       values[cols[h]] = v;
     },
   };
+  ctx.items = [];
+  [DATA_HEADER, 'Items (JSON)'].some(function (h) {
+    try {
+      var parsed = JSON.parse(ctx.get(h) || '[]');
+      if (parsed.length) ctx.items = parsed;
+    } catch (e) {}
+    return ctx.items.length > 0;
+  });
+  return ctx;
 }
 
 function getDcFolder_() {
