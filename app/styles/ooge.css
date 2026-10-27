@@ -1976,6 +1976,8 @@ a.contact-card:hover { border-color: var(--brand); }
 .b2b-items legend { padding: 0 6px; font-size: 0.85rem; color: var(--muted); font-weight: 600; }
 .b2b-items__row { display: grid; grid-template-columns: 1fr 90px auto; gap: 10px; align-items: end; }
 .b2b-items__row > label { min-width: 0; }
+.b2b-items__row .b2b-items__reason { grid-column: 1 / -1; }
+.b2b-items__row + .b2b-items__row { border-top: 1px dashed var(--line); padding-top: 12px; }
 .b2b-items__remove { height: 42px; width: 38px; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; font-size: 1.2rem; line-height: 1; cursor: pointer; color: var(--muted); }
 .b2b-items__remove:hover { color: var(--text); border-color: var(--ink); }
 @media (max-width: 640px) {

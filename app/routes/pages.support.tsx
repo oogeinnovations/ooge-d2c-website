@@ -34,7 +34,7 @@ const TOPICS = [
   },
   {
     title: 'B2B returns',
-    sub: 'Business customer? Request a return and we’ll send your delivery challan.',
+    sub: 'Stockists and distributors: request a return and we’ll send your delivery challan.',
     to: '/pages/b2b-returns',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">

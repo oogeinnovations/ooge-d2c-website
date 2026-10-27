@@ -6,7 +6,12 @@
 // the customer "received" when it wasn't would silently lose their return.
 import {data} from 'react-router';
 import type {Route} from './+types/api.b2b-return';
-import {RETURN_RULES, MAX_ITEMS, validateItems} from '~/lib/b2bReturn';
+import {
+  RETURN_RULES,
+  MAX_ITEMS,
+  reasonText,
+  validateItems,
+} from '~/lib/b2bReturn';
 import {validate} from '~/lib/validation';
 import {newReturnId, storeReturn} from '~/lib/returns';
 
@@ -31,16 +36,19 @@ export async function action({request, context}: Route.ActionArgs) {
     company: clean(raw.company, 160),
     phone: clean(raw.phone, 20),
     whatsapp: clean(raw.whatsapp, 20),
-    orderId: clean(raw.orderId, 60),
     pickupAddress: clean(raw.pickupAddress, 500),
     pincode: clean(raw.pincode, 6),
-    reason: clean(raw.reason, 500),
   };
   const items = (Array.isArray(raw.items) ? raw.items : [])
     .slice(0, MAX_ITEMS + 1)
     .map((i) => {
       const item = (i ?? {}) as Record<string, unknown>;
-      return {name: clean(item.name, 160), qty: clean(item.qty, 6)};
+      return {
+        name: clean(item.name, 160),
+        qty: clean(item.qty, 6),
+        reason: clean(item.reason, 60),
+        note: clean(item.note, 300),
+      };
     });
 
   const fieldErrors = {...validate(flat, RETURN_RULES), ...validateItems(items)};
@@ -56,7 +64,11 @@ export async function action({request, context}: Route.ActionArgs) {
     ...flat,
     returnId,
     submittedAt: new Date().toISOString(),
-    items: items.map((i) => ({name: i.name, qty: Number(i.qty)})),
+    items: items.map((i) => ({
+      name: i.name,
+      qty: Number(i.qty),
+      reason: reasonText(i),
+    })),
   });
 
   if (!stored.ok) {
