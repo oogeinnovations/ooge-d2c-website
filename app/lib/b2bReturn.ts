@@ -31,7 +31,13 @@ export type B2BReturnValues = {
   items: ReturnItem[];
 };
 
-export const MAX_ITEMS = 20;
+/**
+ * There is no limit on the NUMBER of items. This is a limit on their combined
+ * size, checked server-side: items are stored in single Google Sheets cells
+ * (50,000 characters max), so an oversized return would make the whole save
+ * fail. Hundreds of ordinary items fit comfortably.
+ */
+export const MAX_ITEMS_JSON_CHARS = 35000;
 
 export const EMPTY_RETURN: B2BReturnValues = {
   company: '',
@@ -80,7 +86,6 @@ export function reasonText(item: {reason: string; note: string}): string {
 export function validateItems(items: ReturnItem[]): Record<string, string> {
   const errors: Record<string, string> = {};
   if (items.length === 0) errors.items = 'Add at least one item';
-  if (items.length > MAX_ITEMS) errors.items = `Up to ${MAX_ITEMS} items`;
   items.forEach((item, i) => {
     if (!item.name.trim()) errors[`item-${i}-name`] = 'Item name is required';
     if (!(RETURN_REASONS as readonly string[]).includes(item.reason)) {
