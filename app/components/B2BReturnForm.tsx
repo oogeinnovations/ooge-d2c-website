@@ -5,7 +5,6 @@ import {ItemPicker} from '~/components/ItemPicker';
 import {validate, type Errors} from '~/lib/validation';
 import {
   EMPTY_RETURN,
-  MAX_ITEMS,
   RETURN_REASONS,
   RETURN_RULES,
   validateItems,
@@ -46,11 +45,10 @@ export function B2BReturnForm() {
   };
 
   const addItem = () =>
-    setForm((f) =>
-      f.items.length >= MAX_ITEMS
-        ? f
-        : {...f, items: [...f.items, {name: '', qty: '1', reason: '', note: ''}]},
-    );
+    setForm((f) => ({
+      ...f,
+      items: [...f.items, {name: '', qty: '1', reason: '', note: ''}],
+    }));
 
   const removeItem = (i: number) => {
     setForm((f) => ({...f, items: f.items.filter((_, idx) => idx !== i)}));
@@ -247,11 +245,9 @@ export function B2BReturnForm() {
           </div>
         ))}
         {err('items')}
-        {form.items.length < MAX_ITEMS && (
-          <button type="button" className="btn btn--ghost" onClick={addItem}>
-            + Add another item
-          </button>
-        )}
+        <button type="button" className="btn btn--ghost" onClick={addItem}>
+          + Add another item
+        </button>
       </fieldset>
 
       <label>

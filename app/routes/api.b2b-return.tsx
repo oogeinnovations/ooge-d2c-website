@@ -8,7 +8,7 @@ import {data} from 'react-router';
 import type {Route} from './+types/api.b2b-return';
 import {
   RETURN_RULES,
-  MAX_ITEMS,
+  MAX_ITEMS_JSON_CHARS,
   reasonText,
   validateItems,
 } from '~/lib/b2bReturn';
@@ -39,8 +39,23 @@ export async function action({request, context}: Route.ActionArgs) {
     pickupAddress: clean(raw.pickupAddress, 500),
     pincode: clean(raw.pincode, 6),
   };
-  const items = (Array.isArray(raw.items) ? raw.items : [])
-    .slice(0, MAX_ITEMS + 1)
+  const rawItems = Array.isArray(raw.items) ? raw.items : [];
+
+  // There is no cap on how MANY items, but they are stored in single sheet cells
+  // (50,000 characters max), so a return that is too large overall has to be
+  // split rather than silently failing. Checked before any per-item work.
+  if (JSON.stringify(rawItems).length > MAX_ITEMS_JSON_CHARS) {
+    return data(
+      {
+        ok: false,
+        error:
+          'This return has too many items to submit at once. Please split it into two requests.',
+      },
+      {status: 400},
+    );
+  }
+
+  const items = rawItems
     .map((i) => {
       const item = (i ?? {}) as Record<string, unknown>;
       return {
