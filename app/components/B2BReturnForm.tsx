@@ -141,7 +141,7 @@ export function B2BReturnForm() {
     >
       <h3>Request a return</h3>
       <label>
-        Company name
+        Store name
         <input
           className={field('company')}
           value={form.company}
