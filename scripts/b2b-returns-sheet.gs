@@ -42,7 +42,12 @@
  *     "Hi {{1}}, your return {{2}} is approved. Please print the attached
  *      delivery challan and place it inside the parcel with the items before
  *      handing it to our pickup executive."
- * {{1}} = company name, {{2}} = return ID. If your template differs, edit
+ * {{1}} = company name, {{2}} = return ID.
+ *
+ * Optional, to also send the AWB number: create a second template with a third
+ * variable ({{3}} = AWB number), make a Live API Campaign from it, and set its
+ * name as the script property DC_CAMPAIGN_NAME_AWB. When that property is set it
+ * is used instead of DC_CAMPAIGN_NAME; remove it to go back to the first one. If your template differs, edit
  * `sendDcOnWhatsApp_` - the number of templateParams must match the variables.
  *
  * The DC PDF is shared as "anyone with the link can view" so WhatsApp can fetch
@@ -582,7 +587,11 @@ function dcHtml_(ctx, dcNo) {
 function sendDcOnWhatsApp_(ctx, file) {
   var p = PropertiesService.getScriptProperties();
   var apiKey = p.getProperty('AISENSY_API_KEY');
-  var campaign = p.getProperty('DC_CAMPAIGN_NAME');
+  // If DC_CAMPAIGN_NAME_AWB is set, use that campaign: its template has a third
+  // variable for the AWB number. Otherwise fall back to the two-variable one.
+  var awbCampaign = p.getProperty('DC_CAMPAIGN_NAME_AWB');
+  var withAwb = Boolean(awbCampaign);
+  var campaign = awbCampaign || p.getProperty('DC_CAMPAIGN_NAME');
   if (!apiKey || !campaign) {
     return {ok: false, detail: 'AISENSY_API_KEY / DC_CAMPAIGN_NAME not set'};
   }
@@ -601,13 +610,19 @@ function sendDcOnWhatsApp_(ctx, file) {
   var pdfUrl =
     'https://drive.usercontent.google.com/download?id=' + file.getId() + '&export=download';
 
+  var params = [ctx.get('Company'), ctx.get('Return ID')];
+  if (withAwb) {
+    // A variable cannot be empty, so say so when no AWB was entered yet.
+    params.push(ctx.get('AWB') || 'will be shared shortly');
+  }
   var payload = {
     apiKey: apiKey,
     campaignName: campaign,
     destination: to,
     userName: ctx.get('Company'),
-    // Order matters: {{1}} company, {{2}} return ID.
-    templateParams: [ctx.get('Company'), ctx.get('Return ID')],
+    // Order matters: {{1}} company, {{2}} return ID, and (new template only)
+    // {{3}} the AWB number.
+    templateParams: params,
     source: 'b2b-return-dc',
     media: {url: pdfUrl, filename: file.getName()},
   };
