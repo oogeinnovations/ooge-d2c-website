@@ -52,7 +52,7 @@ const PHONE = /^[0-9+\-\s]{7,15}$/;
 
 /** Rules for the flat (non-item) fields. */
 export const RETURN_RULES: Record<string, Rule> = {
-  company: {label: 'Company name', required: true},
+  company: {label: 'Store name', required: true},
   phone: {
     label: 'Phone number',
     required: true,
