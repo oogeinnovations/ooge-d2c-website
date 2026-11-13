@@ -44,6 +44,12 @@
  *      handing it to our pickup executive."
  * {{1}} = company name, {{2}} = return ID.
  *
+ * Optional, to message customers when you reject a return: create a Utility
+ * template with {{1}} store name, {{2}} return ID, {{3}} reason (no document
+ * header), make a Live API Campaign from it, and set its name as the script
+ * property DC_CAMPAIGN_NAME_REJECT. Used by the Reject & notify button in the
+ * items panel; without it, rejecting only changes the Status.
+ *
  * Optional, to also send the AWB number: create a second template with a third
  * variable ({{3}} = AWB number), make a Live API Campaign from it, and set its
  * name as the script property DC_CAMPAIGN_NAME_AWB. When that property is set it
@@ -404,6 +410,97 @@ function acceptFromPanel(row, returnId, force) {
   }
 }
 
+/**
+ * From the panel: reject the return and tell the customer on WhatsApp. The
+ * reason is optional. Needs the DC_CAMPAIGN_NAME_REJECT script property (a Live
+ * AiSensy API campaign for the rejection template); without it the return is
+ * still marked Rejected, just with no message.
+ */
+function rejectFromPanel(row, returnId, reason, force) {
+  try {
+    var sheet = getSheet_();
+    var ctx = rowContext_(sheet, row);
+    if (!ctx || ctx.get('Return ID') !== returnId) {
+      return {ok: false, text: 'That row changed. Click the return again.'};
+    }
+    if (ctx.get('DC no.') && !force) {
+      return {
+        ok: false,
+        confirm: true,
+        text: 'A DC (' + ctx.get('DC no.') + ') was already made for this return.',
+      };
+    }
+    ctx.set('Status', 'Rejected');
+    var res = sendRejectionOnWhatsApp_(ctx, reason);
+    if (res.ok) {
+      ctx.set('DC WhatsApp', 'rejection sent');
+      return {ok: true, text: 'Rejected. The customer was told on WhatsApp.'};
+    }
+    if (res.notConfigured) {
+      ctx.set('DC WhatsApp', 'rejected (no message sent: rejection campaign not set up)');
+      return {
+        ok: true,
+        text: 'Marked Rejected, but no WhatsApp was sent: the rejection campaign is not set up yet.',
+      };
+    }
+    ctx.set('DC WhatsApp', 'rejection message failed: ' + res.detail);
+    return {
+      ok: false,
+      text: 'Marked Rejected, but the WhatsApp failed: ' + res.detail + ' Tell the customer yourself.',
+    };
+  } catch (err) {
+    return {ok: false, text: String(err.message || err)};
+  }
+}
+
+function sendRejectionOnWhatsApp_(ctx, reason) {
+  var p = PropertiesService.getScriptProperties();
+  var apiKey = p.getProperty('AISENSY_API_KEY');
+  var campaign = p.getProperty('DC_CAMPAIGN_NAME_REJECT');
+  if (!apiKey || !campaign) {
+    return {ok: false, notConfigured: true, detail: 'DC_CAMPAIGN_NAME_REJECT not set'};
+  }
+  var to = toWhatsAppNumber_(
+    ctx.get('WhatsApp number'),
+    p.getProperty('DEFAULT_COUNTRY_CODE') || '91',
+  );
+  if (!to) {
+    return {ok: false, detail: 'Invalid WhatsApp number: ' + ctx.get('WhatsApp number')};
+  }
+  // WhatsApp variables can't hold line breaks, tabs or long runs of spaces, and
+  // can't be empty, so tidy the reason and fall back to a neutral sentence.
+  var why = String(reason || '')
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/ {2,}/g, ' ')
+    .trim()
+    .slice(0, 200);
+  var payload = {
+    apiKey: apiKey,
+    campaignName: campaign,
+    destination: to,
+    userName: ctx.get('Company'),
+    // {{1}} store name, {{2}} return ID, {{3}} reason.
+    templateParams: [
+      ctx.get('Company'),
+      ctx.get('Return ID'),
+      why || 'Please reply to this message for details.',
+    ],
+    source: 'b2b-return-rejected',
+  };
+  try {
+    var res = UrlFetchApp.fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true,
+    });
+    if (res.getResponseCode() === 200) return {ok: true, detail: ''};
+    return {ok: false, detail: 'AiSensy ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 200)};
+  } catch (err) {
+    return {ok: false, detail: String(err)};
+  }
+}
+
 function panelHtml_() {
   return (
     '<html><head><base target="_top"><style>' +
@@ -415,6 +512,9 @@ function panelHtml_() {
     'button{width:100%;margin-top:8px;padding:10px;font-size:14px;background:#1a73e8;color:#fff;border:0;border-radius:4px;cursor:pointer}' +
     'button:disabled{background:#9bbcf0;cursor:default}' +
     '#msg{margin-top:10px;padding:8px;border-radius:4px;display:none}' +
+    '.rej{margin-top:18px;padding-top:12px;border-top:1px solid #e3e3e3}.rej label{display:block;font-weight:bold;margin-bottom:4px}' +
+    'textarea{width:100%;box-sizing:border-box;font:inherit;padding:6px;border:1px solid #ccc;border-radius:4px}' +
+    'button.red{background:#c5221f}button.red:disabled{background:#e8a3a1}' +
     '.ok{background:#e6f4ea}.bad{background:#fde7e9}.note{color:#666;font-size:12px;margin-top:12px}' +
     '</style></head><body>' +
     '<div id="empty" class="sub">Loading...</div>' +
@@ -423,6 +523,9 @@ function panelHtml_() {
     '<div id="list"></div><div id="count"></div>' +
     '<button id="accept" onclick="accept(false)">Accept &amp; send DC</button>' +
     '<div id="msg"></div>' +
+    '<div class="rej"><label for="reason">Reason for rejecting (optional)</label>' +
+    '<textarea id="reason" rows="2" placeholder="e.g. Item was used and not in original packaging"></textarea>' +
+    '<button id="reject" class="red" onclick="reject(false)">Reject &amp; notify</button></div>' +
     '<div class="note">Untick any item you are not taking back. The DC lists only the ticked items.</div>' +
     '</div><script>' +
     'var cur=null,key="";' +
@@ -431,7 +534,9 @@ function panelHtml_() {
     'function render(st){' +
     ' if(st.none){$("main").style.display="none";$("empty").style.display="block";$("empty").textContent=st.message;cur=null;key="";return}' +
     ' var k=st.row+"|"+st.returnId+"|"+JSON.stringify(st.items)+"|"+st.status+"|"+st.dcNo;' +
-    ' if(k===key)return; key=k; cur=st;' +
+    ' if(k===key)return; key=k;' +
+    ' if(!cur||cur.returnId!==st.returnId)$("reason").value="";' +
+    ' cur=st;' +
     ' $("empty").style.display="none";$("main").style.display="block";$("msg").style.display="none";' +
     ' $("title").textContent=st.returnId;' +
     ' $("sub").textContent=st.company+" - "+st.status+(st.dcNo?" - "+st.dcNo:"");' +
@@ -454,6 +559,15 @@ function panelHtml_() {
     '  show(r.text,r.ok?"ok":"bad");key="";count()})' +
     ' .withFailureHandler(function(e){show(e.message||e,"bad");count()})' +
     ' .acceptFromPanel(st.row,st.returnId,!!force)}' +
+    'function reject(force){var st=cur;' +
+    ' if(!force&&!confirm("Reject "+st.returnId+" and message the customer on WhatsApp?"))return;' +
+    ' $("reject").disabled=true;show("Working...","ok");' +
+    ' google.script.run.withSuccessHandler(function(r){' +
+    '  $("reject").disabled=false;' +
+    '  if(r.confirm){if(confirm(r.text+" Reject anyway?"))return reject(true);$("msg").style.display="none";return}' +
+    '  show(r.text,r.ok?"ok":"bad");key="";if(r.ok)$("reason").value=""})' +
+    ' .withFailureHandler(function(e){$("reject").disabled=false;show(e.message||e,"bad")})' +
+    ' .rejectFromPanel(st.row,st.returnId,$("reason").value,!!force)}' +
     'function poll(){google.script.run.withSuccessHandler(render).getPanelState()}' +
     'poll();setInterval(poll,1500);' +
     '</script></body></html>'
