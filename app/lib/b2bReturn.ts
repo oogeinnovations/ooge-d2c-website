@@ -8,9 +8,6 @@ export const RETURN_REASONS = [
   'Defective / not working',
   'Damaged in transit',
   'Wrong item received',
-  'Quantity mismatch',
-  'Not as described',
-  'No longer needed',
   'Other',
 ] as const;
 
