@@ -41,9 +41,8 @@ export async function action({request, context}: Route.ActionArgs) {
   };
   const rawItems = Array.isArray(raw.items) ? raw.items : [];
 
-  // There is no cap on how MANY items, but they are stored in single sheet cells
-  // (50,000 characters max), so a return that is too large overall has to be
-  // split rather than silently failing. Checked before any per-item work.
+  // No cap on how MANY items; this only stops a runaway request (several
+  // thousand ordinary items) before any per-item work is done.
   if (JSON.stringify(rawItems).length > MAX_ITEMS_JSON_CHARS) {
     return data(
       {
