@@ -1992,3 +1992,11 @@ a.contact-card:hover { border-color: var(--brand); }
 .item-picker__list li:hover, .item-picker__list li.is-active { background: var(--surface-2); }
 
 a.help-card { display: block; color: inherit; text-decoration: none; }
+
+/* ── B2B returns form: bulk upload ────────────────────────────────────────── */
+.b2b-bulk { border: 1px dashed var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.b2b-bulk p { margin: 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+.b2b-bulk__buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.b2b-bulk__buttons .btn { flex: 1 1 160px; text-align: center; text-decoration: none; }
+.b2b-bulk .b2b-bulk__ok { color: #137333; font-weight: 600; }
+.b2b-bulk__errors { margin: 0; padding-left: 18px; color: #b3261e; font-size: 0.82rem; line-height: 1.5; }

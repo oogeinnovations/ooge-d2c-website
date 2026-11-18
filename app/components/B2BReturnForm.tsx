@@ -1,6 +1,6 @@
 // B2B return request form. Submissions POST to `app/routes/api.b2b-return.tsx`,
 // which appends them to the returns Google Sheet for the team to review.
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {ItemPicker} from '~/components/ItemPicker';
 import {validate, type Errors} from '~/lib/validation';
 import {
@@ -19,6 +19,11 @@ export function B2BReturnForm() {
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [returnId, setReturnId] = useState('');
+  // Bulk upload (Excel/CSV): what happened, and any problems found in the file.
+  const [bulkMsg, setBulkMsg] = useState('');
+  const [bulkErrors, setBulkErrors] = useState<string[]>([]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const clearError = (key: string) =>
     setErrors((prev) => (prev[key] ? {...prev, [key]: ''} : prev));
@@ -59,6 +64,46 @@ export function B2BReturnForm() {
         Object.entries(prev).filter(([k]) => !k.startsWith('item-')),
       ),
     );
+  };
+
+  const onBulkFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // so the same file can be chosen again after fixing it
+    if (!file) return;
+    setBulkBusy(true);
+    setBulkMsg('');
+    setBulkErrors([]);
+    try {
+      // Loaded on demand: the spreadsheet reader is only needed for this.
+      const {parseReturnFile} = await import('~/lib/returnUpload');
+      const {items, errors: problems} = await parseReturnFile(file);
+      if (problems.length) {
+        setBulkErrors(problems.slice(0, 15));
+        setBulkMsg(
+          `${problems.length} problem${problems.length === 1 ? '' : 's'} found in the file, so nothing was added. Fix ${problems.length === 1 ? 'it' : 'them'} and upload again.`,
+        );
+        return;
+      }
+      if (items.length === 0) {
+        setBulkMsg(
+          'No products with a Quantity were found. Enter a Quantity and Reason against the products you are returning.',
+        );
+        return;
+      }
+      // Keep rows already typed by hand; drop the untouched blank starter row.
+      setForm((f) => ({
+        ...f,
+        items: [...f.items.filter((i) => i.name.trim() !== ''), ...items],
+      }));
+      setErrors((prev) =>
+        Object.fromEntries(Object.entries(prev).filter(([k]) => !k.startsWith('item-'))),
+      );
+      setBulkMsg(`Added ${items.length} item${items.length === 1 ? '' : 's'} from the file. Check them below.`);
+    } catch {
+      setBulkMsg('Could not read that file. Please upload the Excel template you downloaded (.xlsx), or a .csv file.');
+    } finally {
+      setBulkBusy(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,6 +217,45 @@ export function B2BReturnForm() {
           {err('whatsapp')}
         </label>
       </div>
+      <div className="b2b-bulk">
+        <strong>Returning many items?</strong>
+        <p>
+          Download the template. Our product names are already filled in. Enter
+          the Quantity and choose a Reason only for the products you are
+          returning, then upload it.
+        </p>
+        <div className="b2b-bulk__buttons">
+          <a className="btn btn--ghost" href="/api/returns-template" download>
+            Download template
+          </a>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            disabled={bulkBusy}
+            onClick={() => fileRef.current?.click()}
+          >
+            {bulkBusy ? 'Reading…' : 'Upload filled file'}
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx,.csv"
+            hidden
+            onChange={(e) => void onBulkFile(e)}
+          />
+        </div>
+        {bulkMsg && (
+          <p className={bulkErrors.length ? 'field-error' : 'b2b-bulk__ok'}>{bulkMsg}</p>
+        )}
+        {bulkErrors.length > 0 && (
+          <ul className="b2b-bulk__errors">
+            {bulkErrors.map((m) => (
+              <li key={m}>{m}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <fieldset className="b2b-items">
         <legend>Items to return</legend>
         {form.items.map((item, i) => (

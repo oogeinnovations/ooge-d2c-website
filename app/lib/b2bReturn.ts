@@ -29,12 +29,12 @@ export type B2BReturnValues = {
 };
 
 /**
- * There is no limit on the NUMBER of items. This is a limit on their combined
- * size, checked server-side: items are stored in single Google Sheets cells
- * (50,000 characters max), so an oversized return would make the whole save
- * fail. Hundreds of ordinary items fit comfortably.
+ * There is no limit on the NUMBER of items; the sheet splits a return's item data
+ * over as many cells as it needs. This is only a sanity ceiling on the request's
+ * total size (several thousand ordinary items) so a runaway or malicious request
+ * can't flood the sheet.
  */
-export const MAX_ITEMS_JSON_CHARS = 35000;
+export const MAX_ITEMS_JSON_CHARS = 600000;
 
 export const EMPTY_RETURN: B2BReturnValues = {
   company: '',

@@ -21,7 +21,8 @@ export type StoreReturnResult =
   | {ok: true}
   | {ok: false; reason: 'not-configured' | 'request-failed'; detail: string};
 
-const TIMEOUT_MS = 8000;
+// Long returns mean more cells for the sheet script to write, so allow it time.
+const TIMEOUT_MS = 25000;
 
 /** e.g. "RET-250907-K3F9" — date for sorting by eye, suffix to avoid clashes. */
 export function newReturnId(now = new Date()): string {
