@@ -14,6 +14,11 @@ export type StoredReturn = {
   whatsapp: string;
   pickupAddress: string;
   pincode: string;
+  /** Parcel details for the courier pickup. */
+  boxes: string;
+  weight: string;
+  /** Box photos as base64 JPEGs; the sheet script saves them to Drive. */
+  photos: {name: string; data: string}[];
   items: {name: string; qty: number; reason: string}[];
 };
 
@@ -21,8 +26,9 @@ export type StoreReturnResult =
   | {ok: true}
   | {ok: false; reason: 'not-configured' | 'request-failed'; detail: string};
 
-// Long returns mean more cells for the sheet script to write, so allow it time.
-const TIMEOUT_MS = 25000;
+// Long returns mean more cells for the sheet script to write, and box photos
+// are saved to Drive, so allow it time.
+const TIMEOUT_MS = 40000;
 
 /** e.g. "RET-250907-K3F9" — date for sorting by eye, suffix to avoid clashes. */
 export function newReturnId(now = new Date()): string {

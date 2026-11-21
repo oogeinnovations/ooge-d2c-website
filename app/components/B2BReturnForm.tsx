@@ -5,10 +5,13 @@ import {ItemPicker} from '~/components/ItemPicker';
 import {validate, type Errors} from '~/lib/validation';
 import {
   EMPTY_RETURN,
+  MAX_BOX_PHOTOS,
   RETURN_REASONS,
   RETURN_RULES,
   validateItems,
+  validatePhotos,
   type B2BReturnValues,
+  type BoxPhoto,
 } from '~/lib/b2bReturn';
 
 type FlatKey = Exclude<keyof B2BReturnValues, 'items'>;
@@ -24,6 +27,10 @@ export function B2BReturnForm() {
   const [bulkErrors, setBulkErrors] = useState<string[]>([]);
   const [bulkBusy, setBulkBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Photos of the packed boxes (needed by the courier to book the pickup).
+  const [photos, setPhotos] = useState<BoxPhoto[]>([]);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
 
   const clearError = (key: string) =>
     setErrors((prev) => (prev[key] ? {...prev, [key]: ''} : prev));
@@ -106,11 +113,43 @@ export function B2BReturnForm() {
     }
   };
 
+  const onPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (!files.length) return;
+    const room = MAX_BOX_PHOTOS - photos.length;
+    if (room <= 0) {
+      setErrors((prev) => ({...prev, photos: `You can add up to ${MAX_BOX_PHOTOS} photos`}));
+      return;
+    }
+    setPhotoBusy(true);
+    try {
+      const {shrinkPhoto} = await import('~/lib/boxPhotos');
+      const added: BoxPhoto[] = [];
+      for (const f of files.slice(0, room)) {
+        try {
+          added.push(await shrinkPhoto(f));
+        } catch {
+          // not an image the browser can read: skip it
+        }
+      }
+      if (added.length) {
+        setPhotos((p) => [...p, ...added]);
+        clearError('photos');
+      } else {
+        setErrors((prev) => ({...prev, photos: 'Could not read that file. Please choose a photo (JPG or PNG).'}));
+      }
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const found = {
       ...validate(form as unknown as Record<string, string>, RETURN_RULES),
       ...validateItems(form.items),
+      ...validatePhotos(photos),
     };
     if (Object.keys(found).length) {
       setErrors(found);
@@ -122,7 +161,7 @@ export function B2BReturnForm() {
       const res = await fetch('/api/b2b-return', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(form),
+        body: JSON.stringify({...form, photos}),
       });
       const data = (await res.json().catch(() => null)) as {
         ok?: boolean;
@@ -162,6 +201,7 @@ export function B2BReturnForm() {
           className="btn btn--ghost"
           onClick={() => {
             setForm(EMPTY_RETURN);
+            setPhotos([]);
             setErrors({});
             setSubmitError('');
             setReturnId('');
@@ -332,6 +372,83 @@ export function B2BReturnForm() {
         <button type="button" className="btn btn--ghost" onClick={addItem}>
           + Add another item
         </button>
+      </fieldset>
+
+      <fieldset className="b2b-parcel">
+        <legend>Parcel details</legend>
+        <p className="b2b-parcel__hint">
+          Pack the items first. We need these to book the courier pickup.
+        </p>
+        <div className="corp-form__row">
+          <label>
+            Total boxes
+            <input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              placeholder="e.g. 3"
+              className={field('boxes')}
+              value={form.boxes}
+              onChange={update('boxes')}
+            />
+            {err('boxes')}
+          </label>
+          <label>
+            Total weight (kg)
+            <input
+              type="number"
+              min={0}
+              step="0.1"
+              inputMode="decimal"
+              placeholder="e.g. 12.5"
+              className={field('weight')}
+              value={form.weight}
+              onChange={update('weight')}
+            />
+            {err('weight')}
+          </label>
+        </div>
+        <div className="b2b-photos">
+          <span className="b2b-photos__label">
+            Photo of the packed boxes{' '}
+            <small>(1 to {MAX_BOX_PHOTOS} photos)</small>
+          </span>
+          {photos.length > 0 && (
+            <div className="b2b-photos__grid">
+              {photos.map((p, i) => (
+                <div className="b2b-photos__thumb" key={i}>
+                  <img src={`data:image/jpeg;base64,${p.data}`} alt={`Box photo ${i + 1}`} />
+                  <button
+                    type="button"
+                    aria-label={`Remove photo ${i + 1}`}
+                    onClick={() => setPhotos((all) => all.filter((_, idx) => idx !== i))}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {photos.length < MAX_BOX_PHOTOS && (
+            <button
+              type="button"
+              className={'btn btn--ghost' + (errors.photos ? ' is-invalid' : '')}
+              disabled={photoBusy}
+              onClick={() => photoRef.current?.click()}
+            >
+              {photoBusy ? 'Adding…' : photos.length ? '+ Add another photo' : 'Take or upload photo'}
+            </button>
+          )}
+          <input
+            ref={photoRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => void onPhotos(e)}
+          />
+          {err('photos')}
+        </div>
       </fieldset>
 
       <label>

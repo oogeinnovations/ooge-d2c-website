@@ -9,8 +9,11 @@ import type {Route} from './+types/api.b2b-return';
 import {
   RETURN_RULES,
   MAX_ITEMS_JSON_CHARS,
+  MAX_BOX_PHOTOS,
+  MAX_PHOTO_CHARS,
   reasonText,
   validateItems,
+  validatePhotos,
 } from '~/lib/b2bReturn';
 import {validate} from '~/lib/validation';
 import {newReturnId, storeReturn} from '~/lib/returns';
@@ -38,7 +41,18 @@ export async function action({request, context}: Route.ActionArgs) {
     whatsapp: clean(raw.whatsapp, 20),
     pickupAddress: clean(raw.pickupAddress, 500),
     pincode: clean(raw.pincode, 6),
+    boxes: clean(raw.boxes, 4),
+    weight: clean(raw.weight, 8),
   };
+  // Box photos: base64 JPEGs shrunk in the browser. Anything that isn't a plain
+  // base64 string of a sane size is dropped, and validation then asks for a photo.
+  const photos = (Array.isArray(raw.photos) ? raw.photos : [])
+    .slice(0, MAX_BOX_PHOTOS + 1)
+    .map((p) => {
+      const ph = (p ?? {}) as Record<string, unknown>;
+      return {name: clean(ph.name, 80) || 'box.jpg', data: typeof ph.data === 'string' ? ph.data : ''};
+    })
+    .filter((p) => p.data.length > 100 && p.data.length <= MAX_PHOTO_CHARS && /^[A-Za-z0-9+/=]+$/.test(p.data));
   const rawItems = Array.isArray(raw.items) ? raw.items : [];
 
   // No cap on how MANY items; this only stops a runaway request (several
@@ -65,7 +79,7 @@ export async function action({request, context}: Route.ActionArgs) {
       };
     });
 
-  const fieldErrors = {...validate(flat, RETURN_RULES), ...validateItems(items)};
+  const fieldErrors = {...validate(flat, RETURN_RULES), ...validateItems(items), ...validatePhotos(photos)};
   if (Object.keys(fieldErrors).length) {
     return data(
       {ok: false, error: 'Please check the highlighted fields.', fieldErrors},
@@ -78,6 +92,7 @@ export async function action({request, context}: Route.ActionArgs) {
     ...flat,
     returnId,
     submittedAt: new Date().toISOString(),
+    photos,
     items: items.map((i) => ({
       name: i.name,
       qty: Number(i.qty),
