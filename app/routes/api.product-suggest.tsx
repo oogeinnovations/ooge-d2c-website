@@ -1,26 +1,14 @@
-// GET /api/product-suggest?q=… — type-ahead for the B2B returns item picker.
+// GET /api/product-suggest?q=… — type-ahead for the B2B returns item picker and
+// the sheet's alternate-product box.
 //
-// Returns up to MAX product names from the Storefront API, e.g. "Wavepods 1".
-// Variants (colours etc.) are deliberately left out. It never errors the page: on any failure the picker
-// just shows no suggestions and the customer can still type the name by hand.
+// Searches the whole catalogue (see app/lib/products.ts) and returns up to MAX
+// product names, best match first. It never errors the page: on any failure the
+// picker just shows no suggestions and the customer can still type the name by hand.
 import {data} from 'react-router';
 import type {Route} from './+types/api.product-suggest';
+import {fetchAllProductTitles, suggestTitles} from '~/lib/products';
 
-const MAX = 10;
-
-const QUERY = `
-  query ReturnItemSuggest($term: String!, $first: Int!) {
-    products(first: $first, query: $term) {
-      nodes {
-        title
-      }
-    }
-  }
-`;
-
-type Result = {
-  products: {nodes: {title: string}[]};
-};
+const MAX = 20;
 
 export async function loader({request, context}: Route.LoaderArgs) {
   const term = (new URL(request.url).searchParams.get('q') ?? '')
@@ -31,12 +19,8 @@ export async function loader({request, context}: Route.LoaderArgs) {
   if (term.length < 2) return data({items: [] as string[]}, {headers});
 
   try {
-    const res = (await context.storefront.query(QUERY, {
-      variables: {term, first: MAX},
-    })) as Result;
-
-    const labels = (res.products?.nodes ?? []).map((p) => p.title);
-    return data({items: labels}, {headers});
+    const titles = await fetchAllProductTitles(context.storefront);
+    return data({items: suggestTitles(titles, term, MAX)}, {headers});
   } catch (error) {
     console.error('[product-suggest]', error);
     return data({items: [] as string[]});
