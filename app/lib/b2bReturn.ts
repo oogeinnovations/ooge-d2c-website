@@ -25,8 +25,20 @@ export type B2BReturnValues = {
   whatsapp: string;
   pickupAddress: string;
   pincode: string;
+  /** Parcel details the courier (Shipway) needs to book the pickup. */
+  boxes: string;
+  weight: string;
   items: ReturnItem[];
 };
+
+/** A photo of the packed boxes, already shrunk to a JPEG in the browser. */
+export type BoxPhoto = {name: string; data: string};
+
+/** 1 to 5 photos; each one is resized to at most 1600 px before upload. */
+export const MIN_BOX_PHOTOS = 1;
+export const MAX_BOX_PHOTOS = 5;
+/** Base64 length ceiling per photo (about 1.5 MB of JPEG). */
+export const MAX_PHOTO_CHARS = 2000000;
 
 /**
  * There is no limit on the NUMBER of items; the sheet splits a return's item data
@@ -42,6 +54,8 @@ export const EMPTY_RETURN: B2BReturnValues = {
   whatsapp: '',
   pickupAddress: '',
   pincode: '',
+  boxes: '',
+  weight: '',
   items: [{name: '', qty: '1', reason: '', note: ''}],
 };
 
@@ -69,7 +83,26 @@ export const RETURN_RULES: Record<string, Rule> = {
     pattern: /^[0-9]{6}$/,
     message: 'Enter a 6-digit pincode',
   },
+  boxes: {
+    label: 'Total boxes',
+    required: true,
+    pattern: /^[1-9][0-9]{0,2}$/,
+    message: 'Enter the number of boxes (1 or more)',
+  },
+  weight: {
+    label: 'Total weight',
+    required: true,
+    pattern: /^(?:[0-9]{1,4})(?:\.[0-9]{1,2})?$/,
+    message: 'Enter the total weight in kg, e.g. 12.5',
+  },
 };
+
+/** Check the box photos: errors keyed `photos`. */
+export function validatePhotos(photos: BoxPhoto[]): Record<string, string> {
+  if (photos.length < MIN_BOX_PHOTOS) return {photos: 'Add at least one photo of the packed boxes'};
+  if (photos.length > MAX_BOX_PHOTOS) return {photos: `Add at most ${MAX_BOX_PHOTOS} photos`};
+  return {};
+}
 
 /** The single string stored for an item, e.g. "Other: box was crushed". */
 export function reasonText(item: {reason: string; note: string}): string {
