@@ -1,6 +1,7 @@
 // B2B return request form. Submissions POST to `app/routes/api.b2b-return.tsx`,
 // which appends them to the returns Google Sheet for the team to review.
-import {useRef, useState} from 'react';
+import {B2BReturnTerms} from '~/components/B2BReturnTerms';
+import {useEffect, useRef, useState} from 'react';
 import {ItemPicker} from '~/components/ItemPicker';
 import {validate, type Errors} from '~/lib/validation';
 import {
@@ -15,6 +16,25 @@ import {
 } from '~/lib/b2bReturn';
 
 type FlatKey = Exclude<keyof B2BReturnValues, 'items'>;
+
+/**
+ * A photo thumbnail, drawn on a canvas. An <img> with a data: or blob: source is
+ * blocked by the site's Content-Security-Policy, so it can't be used here.
+ */
+function PhotoThumb({data, label}: {data: string; label: string}) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const {drawThumb} = await import('~/lib/boxPhotos');
+      if (!cancelled && ref.current) await drawThumb(ref.current, data).catch(() => undefined);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [data]);
+  return <canvas ref={ref} width={176} height={176} role="img" aria-label={label} />;
+}
 
 export function B2BReturnForm() {
   const [form, setForm] = useState<B2BReturnValues>(EMPTY_RETURN);
@@ -31,6 +51,7 @@ export function B2BReturnForm() {
   const [photos, setPhotos] = useState<BoxPhoto[]>([]);
   const [photoBusy, setPhotoBusy] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
+  const [agreed, setAgreed] = useState(false);
 
   const clearError = (key: string) =>
     setErrors((prev) => (prev[key] ? {...prev, [key]: ''} : prev));
@@ -126,18 +147,23 @@ export function B2BReturnForm() {
     try {
       const {shrinkPhoto} = await import('~/lib/boxPhotos');
       const added: BoxPhoto[] = [];
+      // Say why each skipped file was skipped, instead of one vague message.
+      const problems: string[] = [];
       for (const f of files.slice(0, room)) {
         try {
           added.push(await shrinkPhoto(f));
-        } catch {
-          // not an image the browser can read: skip it
+        } catch (err) {
+          problems.push(err instanceof Error ? err.message : `"${f.name}" could not be used.`);
         }
       }
-      if (added.length) {
-        setPhotos((p) => [...p, ...added]);
-        clearError('photos');
+      if (files.length > room) {
+        problems.push(`Only ${room} more photo${room === 1 ? '' : 's'} could be added (up to ${MAX_BOX_PHOTOS}).`);
+      }
+      if (added.length) setPhotos((p) => [...p, ...added]);
+      if (problems.length) {
+        setErrors((prev) => ({...prev, photos: problems.join(' ')}));
       } else {
-        setErrors((prev) => ({...prev, photos: 'Could not read that file. Please choose a photo (JPG or PNG).'}));
+        clearError('photos');
       }
     } finally {
       setPhotoBusy(false);
@@ -150,6 +176,7 @@ export function B2BReturnForm() {
       ...validate(form as unknown as Record<string, string>, RETURN_RULES),
       ...validateItems(form.items),
       ...validatePhotos(photos),
+      ...(agreed ? {} : {terms: 'Please accept the terms and conditions to continue'}),
     };
     if (Object.keys(found).length) {
       setErrors(found);
@@ -417,7 +444,7 @@ export function B2BReturnForm() {
             <div className="b2b-photos__grid">
               {photos.map((p, i) => (
                 <div className="b2b-photos__thumb" key={i}>
-                  <img src={`data:image/jpeg;base64,${p.data}`} alt={`Box photo ${i + 1}`} />
+                  <PhotoThumb data={p.data} label={`Box ${i + 1}`} />
                   <button
                     type="button"
                     aria-label={`Remove photo ${i + 1}`}
@@ -472,6 +499,15 @@ export function B2BReturnForm() {
         />
         {err('pincode')}
       </label>
+
+      <B2BReturnTerms
+        checked={agreed}
+        onChange={(v) => {
+          setAgreed(v);
+          if (v) clearError('terms');
+        }}
+        error={errors.terms}
+      />
 
       {submitError && <p className="field-error">{submitError}</p>}
       <button
