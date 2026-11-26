@@ -1,7 +1,7 @@
 // Terms the distributor must accept before raising a B2B return.
 // NOTE: the [__ months], [__ days], [__ hours] and [Bengaluru] values are still
 // placeholders from the draft wording; fill them in before relying on this text.
-const TERMS: {title: string; points: {n: string; text: string}[]}[] = [
+export const TERMS: {title: string; points: {n: string; text: string}[]}[] = [
   {
     title: '1. Scope',
     points: [{n: '', text: 'These terms apply to OOGE products bought by you through OOGE’s authorised CNF or super stockist.'}],
@@ -59,6 +59,30 @@ const TERMS: {title: string; points: {n: string; text: string}[]}[] = [
   },
 ];
 
+/** The full terms, shown on their own page. */
+export function B2BReturnTermsText() {
+  return (
+    <>
+      <p>
+        By accepting these terms, the distributor (&ldquo;you&rdquo;) agrees to
+        the following for all returns sent to OOGE Innovations (&ldquo;OOGE&rdquo;).
+      </p>
+      {TERMS.map((s) => (
+        <section key={s.title}>
+          <h2>{s.title}</h2>
+          {s.points.map((p) => (
+            <p key={p.n || p.text}>
+              {p.n && <strong>{p.n} </strong>}
+              {p.text}
+            </p>
+          ))}
+        </section>
+      ))}
+    </>
+  );
+}
+
+/** The checkbox on the form, with a link to the full terms (opens in a new tab). */
 export function B2BReturnTerms({
   checked,
   onChange,
@@ -70,26 +94,15 @@ export function B2BReturnTerms({
 }) {
   return (
     <div className="b2b-terms">
-      <p className="b2b-terms__intro">
-        By accepting these terms, the distributor (&ldquo;you&rdquo;) agrees to
-        the following for all returns sent to OOGE Innovations (&ldquo;OOGE&rdquo;).
-      </p>
-      <div className="b2b-terms__box" role="region" aria-label="Return terms and conditions">
-        {TERMS.map((s) => (
-          <section key={s.title}>
-            <h4>{s.title}</h4>
-            {s.points.map((p) => (
-              <p key={p.n || p.text}>
-                {p.n && <strong>{p.n} </strong>}
-                {p.text}
-              </p>
-            ))}
-          </section>
-        ))}
-      </div>
       <label className="b2b-terms__check">
         <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-        <span>I have read and agree to the return terms and conditions.</span>
+        <span>
+          I have read and agree to the{' '}
+          <a href="/pages/b2b-return-terms" target="_blank" rel="noopener noreferrer">
+            return terms and conditions
+          </a>
+          .
+        </span>
       </label>
       {error ? <span className="field-error">{error}</span> : null}
     </div>
